@@ -36,9 +36,10 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(outdoor_trials 
-               outdoor_trials.c 
+               outdoor_trials.cpp 
                driving.cpp
                buffer.cpp
+               tof.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c
