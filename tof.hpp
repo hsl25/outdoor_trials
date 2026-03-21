@@ -25,6 +25,7 @@ class TOF {
     public:
         TOF();
         void init_i2c();
+        void init_uart();
         void device_setup();
         void calibration();
         void start_continuous_ranging();

@@ -35,6 +35,14 @@ void TOF::init_i2c() {
     gpio_pull_up(SCL_PIN);
 }
 
+void TOF::init_uart() {
+    uart_init(UART_ID, UART_BAUD_RATE);
+
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+
+}
+
 void TOF::device_setup() {
     // ---------------- DEVICE SETUP ----------------
     // Remove these local variables when converting from the main to the class structure
