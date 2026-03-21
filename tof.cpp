@@ -5,6 +5,8 @@
 
 #include "vl53l0x_api.h"
 
+#include "tof.hpp"
+
 // I2C defines 
 #define I2C_PORT i2c0
 #define SDA_PIN 12
@@ -16,6 +18,19 @@
 #define UART_RX_PIN 17
 #define UART_ID uart0
 #define UART_BAUD_RATE 115200
+
+// Constructor
+TOF::TOF() {}
+
+void TOF::init_i2c() {
+    // ---------------- I2C INIT ----------------
+    i2c_init(I2C_PORT, I2C_BAUDRATE);
+
+    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(SDA_PIN);
+    gpio_pull_up(SCL_PIN);
+}
 
 int main() {
 
