@@ -38,7 +38,7 @@ pico_sdk_init()
 add_executable(outdoor_trials 
                outdoor_trials.c 
                driving.cpp
-               buffer.hpp
+               buffer.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c
@@ -52,7 +52,7 @@ pico_set_program_version(outdoor_trials "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(outdoor_trials 0)
-pico_enable_stdio_usb(outdoor_trials 0)
+pico_enable_stdio_usb(outdoor_trials 1)
 
 # Add the standard library to the build
 target_link_libraries(outdoor_trials
@@ -64,12 +64,14 @@ target_link_libraries(outdoor_trials
 # Add the standard include files to the build
 target_include_directories(outdoor_trials PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        vl53l0x/core/inc
+        vl53l0x/platform/inc
 )
 
 # Add any user requested libraries
 target_link_libraries(outdoor_trials 
-        
-        )
+                      hardware_i2c
+                     )
 
 pico_add_extra_outputs(outdoor_trials)
 

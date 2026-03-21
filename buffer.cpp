@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <cstdint>
 #include <cstddef>
-#include <math.h>
+#include <cmath>
 
 #include "buffer.hpp"
 
