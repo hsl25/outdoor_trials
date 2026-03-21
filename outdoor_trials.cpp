@@ -4,6 +4,12 @@
 // File includes
 #include "buffer.hpp"
 #include "driving.hpp"
+#include "tof.hpp"
+
+// Instantiate objects
+TOF tof;
+Drive drive;
+Buffer buffer;
 
 int main() {
     stdio_init_all();
