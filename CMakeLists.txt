@@ -40,6 +40,7 @@ add_executable(outdoor_trials
                driving.cpp
                buffer.cpp
                tof.cpp
+               navigation.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c
