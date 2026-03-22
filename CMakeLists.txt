@@ -41,6 +41,7 @@ add_executable(outdoor_trials
                buffer.cpp
                tof.cpp
                navigation.cpp
+               servo.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c

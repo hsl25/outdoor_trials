@@ -97,6 +97,7 @@ void TOF::start_continuous_ranging() {
 
 // I want this function to be a single read of the data, not a continuous read
 // I can call this function in a while loop in the the main in outdoor_trials.cpp
+// This function returns the distance in millimeters, or 0xFFFF if there is an error
 uint16_t TOF::read_tof_continuous() {
 
     VL53L0X_RangingMeasurementData_t data;
