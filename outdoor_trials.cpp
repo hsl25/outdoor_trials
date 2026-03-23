@@ -21,6 +21,10 @@ int main() {
     tof.init_i2c();
     tof.init_uart();
 
+    // Create a buffer for calibration
+    // This creates a buffer with N = 10 data points
+    buffer.create_calib_buffer(CALIBRATION_SWEEPS);
+
     // Before the rover starts moving, scan the surroundings N times to get mean values for distances 
     // This is the initial calibration stage
     // Still need to modify this function to add data into a buffer and calculate mean distances

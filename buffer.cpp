@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cmath>
+#include <vector>
 
 #include "buffer.hpp"
 
@@ -83,4 +84,10 @@ bool Buffer::is_big_jump(uint16_t new_sample) {
 
 bool Buffer::is_ready() {
     return buffer_count == N;
+}
+
+// This function creates a fixed (not rolling) buffer for calibration for before the rover starts moving
+std::vector<int> Buffer::create_calib_buffer(int num_data) {
+    std::vector<int> arr(num_data,0);
+    return arr;
 }

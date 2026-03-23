@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <iostream>
+#include <vector>
 
 // Other defines 
 #define N 10 // Number of samples in a window for filtering
@@ -20,6 +21,7 @@ class Buffer {
         bool is_big_jump(uint16_t new_sample);
         bool is_anomaly(uint16_t data);
         bool is_ready();
+        std::vector<int> create_calib_buffer(int num_data);
         
         private:
         // Circular buffer 
