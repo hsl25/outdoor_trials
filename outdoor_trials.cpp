@@ -5,11 +5,13 @@
 #include "buffer.hpp"
 #include "driving.hpp"
 #include "tof.hpp"
+#include "servo.hpp"
 
 // Instantiate objects
 TOF tof;
 Drive drive;
 Buffer buffer;
+Servo servo;
 
 int main() {
     stdio_init_all();

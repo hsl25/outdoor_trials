@@ -12,7 +12,7 @@
 
 // Constructor
 Servo::Servo() {
-
+    single_angle = 90; // Default angle for single position
 }
 
 void Servo::init_pwm(uint32_t pin, float duty) {
@@ -36,6 +36,29 @@ void Servo::init_servo() {
     init_pwm(PWM_PIN, SERVO_DUTY_CYCLE);
 }
 
+// This function will set the angle of the servo to a specific angle instead of sweeping
+// The angle set is determined via PWM duty cycle
+// The angle range is 0 to 180 degrees
 void set_angle(float angle) {
-    
+    Servo servo;
+    // Prevents error cases
+    if (angle < 0) {
+        angle = 0;
+    } else if (angle > 180) {
+        angle = 180;
+    }
+
+    // Now I need to convert from PWM to angle
+    // Refer to this link: https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/ 
+    // The PWM of the signal determines the angle the servo motor will rotate to
+    // A 1.0ms pulse corresponds to 0 degrees
+    // A 1.5ms pulse corresponds to the central position of 90 degrees
+    // A 2.0ms pulse corresponds to 180 degrees
+    float pulse_width = 1.0 + (angle / 180.0) * 1.0; // Linear interpolation between 1.0ms and 2.0ms
+    float duty_cycle = pulse_width / PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
+
+    // Set the PWM duty cycle to control the servo angle
+    // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
+    servo.init_pwm(PWM_PIN, duty_cycle);
+
 }
