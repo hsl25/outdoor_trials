@@ -165,6 +165,15 @@ void Drive::set_motor_output(unsigned int speed_pin, unsigned int dir_pin, float
 // ---------------- BASIC MOVEMENT ----------------
 void Drive::drive_forward() {
 
+    // Set all directions to reverse
+    // 0 = forwards, 1 = reverse
+    gpio_put(MOTOR1_DIR_PIN, 1);
+    gpio_put(MOTOR2_DIR_PIN, 1);
+    gpio_put(MOTOR3_DIR_PIN, 1);
+    gpio_put(MOTOR4_DIR_PIN, 1);
+    gpio_put(MOTOR5_DIR_PIN, 1);
+    gpio_put(MOTOR6_DIR_PIN, 1);
+
     set_motor_output(MOTOR1_PWM_PIN, MOTOR1_DIR_PIN, new_motor_pwm);
     set_motor_output(MOTOR2_PWM_PIN, MOTOR2_DIR_PIN, NORMAL_DUTY_CYCLE);
     set_motor_output(MOTOR3_PWM_PIN, MOTOR3_DIR_PIN, NORMAL_DUTY_CYCLE);
@@ -172,6 +181,15 @@ void Drive::drive_forward() {
     set_motor_output(MOTOR5_PWM_PIN, MOTOR5_DIR_PIN, NORMAL_DUTY_CYCLE);
     set_motor_output(MOTOR6_PWM_PIN, MOTOR6_DIR_PIN, NORMAL_DUTY_CYCLE);
 
+}
+
+void Drive::reverse() {
+    set_motor_output(MOTOR1_PWM_PIN, MOTOR1_DIR_PIN, new_motor_pwm);
+    set_motor_output(MOTOR2_PWM_PIN, MOTOR2_DIR_PIN, NORMAL_DUTY_CYCLE);
+    set_motor_output(MOTOR3_PWM_PIN, MOTOR3_DIR_PIN, NORMAL_DUTY_CYCLE);
+    set_motor_output(MOTOR4_PWM_PIN, MOTOR4_DIR_PIN, new_motor_pwm);
+    set_motor_output(MOTOR5_PWM_PIN, MOTOR5_DIR_PIN, NORMAL_DUTY_CYCLE);
+    set_motor_output(MOTOR6_PWM_PIN, MOTOR6_DIR_PIN, NORMAL_DUTY_CYCLE);
 }
 
 // ---------------- TURN CALCULATIONS ----------------

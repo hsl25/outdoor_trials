@@ -60,6 +60,7 @@ class Drive {
         void setup_motors();
         void set_motor_output(unsigned int speed_pin, unsigned int dir_pin, float motor_speed);
         void drive_forward();
+        void reverse();
         float calc_speed_ratio(float turn_radius, float track_width);
         float calc_pwm(float old_wheel_diameter, float new_wheel_diameter);
         void turn_left(float speed_ratio);
