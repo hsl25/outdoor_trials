@@ -6,6 +6,7 @@
 #include "vl53l0x_api.h"
 
 #include "tof.hpp"
+#include "buffer.hpp"
 
 // I2C defines 
 #define I2C_PORT i2c0

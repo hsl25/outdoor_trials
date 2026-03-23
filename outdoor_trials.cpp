@@ -21,9 +21,20 @@ int main() {
     tof.init_i2c();
     tof.init_uart();
 
+    // Setting up the VL53L0X LiDAR and checking for errors
+    tof.device_setup();
+
+    // TOF calibration
+    tof.calibration();
+
+    // Start continuous ranging
+    // This function still needs to be modified for adding data into a buffer and calibrating
+    tof.read_tof_continuous();
+
     // Create a buffer for calibration
     // This creates a buffer with N = 10 data points
-    buffer.create_calib_buffer(CALIBRATION_SWEEPS);
+    
+    // 
 
     // Before the rover starts moving, scan the surroundings N times to get mean values for distances 
     // This is the initial calibration stage

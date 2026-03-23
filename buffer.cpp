@@ -9,7 +9,9 @@
 
 Buffer::Buffer() {
     // Initialise variables 
+    end_of_sweep = 0;
     head = 0;
+    calib_index = 0;
     buffer_count = 0;
     rolling_mean = 0.0;
     rolling_std_dev = 0.0;
@@ -21,7 +23,7 @@ Buffer::Buffer() {
         
 }
 
-void Buffer::add_sample(uint16_t sample) {
+void Buffer::add_rolling_sample(uint16_t sample) {
     // Samples are added into a circular buffer 
     // The data point at the head is replaced with the new data point
     // The head shift accordingly 
@@ -31,6 +33,30 @@ void Buffer::add_sample(uint16_t sample) {
 
     if (buffer_count < N) {
         buffer_count++;
+    }
+
+}
+
+void Buffer::add_calib_sample(uint16_t sample) {
+    calib_buffer[calib_index] = sample;
+
+    // Update sample number accordingly
+    // The servo will sweep from 0 degrees to 180 degrees, then 180 degrees back to 0 degrees
+    // Therefore, the index in the buffer has to go from 0 to 179, then 179 back down to 0
+    if (end_of_sweep == 0) {
+        if (calib_index == 179) {
+            end_of_sweep = !end_of_sweep;
+        } else {
+            calib_index++;
+        }
+    }
+
+    if (end_of_sweep == 1) {
+        if (calib_index == 0) {
+            end_of_sweep = !end_of_sweep;
+        } else {
+            calib_index--;
+        }
     }
 
 }
@@ -84,10 +110,4 @@ bool Buffer::is_big_jump(uint16_t new_sample) {
 
 bool Buffer::is_ready() {
     return buffer_count == N;
-}
-
-// This function creates a fixed (not rolling) buffer for calibration for before the rover starts moving
-std::vector<int> Buffer::create_calib_buffer(int num_data) {
-    std::vector<int> arr(num_data,0);
-    return arr;
 }
