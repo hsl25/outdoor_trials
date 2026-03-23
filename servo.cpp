@@ -39,7 +39,7 @@ void Servo::init_servo() {
 // This function will set the angle of the servo to a specific angle instead of sweeping
 // The angle set is determined via PWM duty cycle
 // The angle range is 0 to 180 degrees
-void set_angle(float angle) {
+void Servo::set_angle(int angle) {
     Servo servo;
     // Prevents error cases
     if (angle < 0) {
@@ -60,5 +60,28 @@ void set_angle(float angle) {
     // Set the PWM duty cycle to control the servo angle
     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
     servo.init_pwm(PWM_PIN, duty_cycle);
+
+}
+
+// This function sweeps the servo from 0 degrees to 180 degrees and then back to 0 degrees
+void Servo::single_sweep() {
+    // Instantiate servo object
+    Servo servo;
+    
+    // Set the angle initially to 0 degrees
+    servo.set_angle(0);
+
+    // Sweep from 0 degrees to 180 degrees
+    for (int angle = 0; angle < 180; angle++) {
+        servo.set_angle(angle);
+        sleep_ms(SWEEP_DELAY);
+    }
+
+    // Now sweep from 180 degrees back to 0 degrees
+    for (int angle = 180; angle > 0; angle--) {
+        servo.set_angle(angle);
+        sleep_ms(SWEEP_DELAY);
+    }
+
 
 }
