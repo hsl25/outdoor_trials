@@ -7,8 +7,9 @@
 #define SERVO_DUTY_CYCLE 0.5 // Will be tuned later
 #define PWM_PERIOD 20.0 // 20ms period for standard servo control
 
-// Other servo defines
+// Servo defines
 #define SWEEP_DELAY 10 // 10ms delay between angle incremements when sweeping the servo back and forth
+#define CALIBRATION_SWEEPS 10 // Before the rover starts moving, the servo will scan back and forth 10 times for distance cailbration
 
 class Servo {
     public:
