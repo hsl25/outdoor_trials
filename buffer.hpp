@@ -17,20 +17,19 @@ class Buffer {
     public:
         Buffer();
         void add_rolling_sample(uint16_t sample);
-        void add_calib_sample(uint16_t sample);
+        void add_calib_sample(float sample, int index);
         void compute_stats();
         bool is_big_jump(uint16_t new_sample);
         bool is_anomaly(uint16_t data);
         bool is_ready();
         
-        private:
+    private:
         // Circular buffer 
         uint16_t lidar_buffer[N];
         uint16_t filtered_data[N];
-        uint16_t calib_buffer[MAX_SERVO_ANGLE];
+        uint16_t calib_buffer[MAX_SERVO_ANGLE + 1];
         size_t calib_index;
         size_t head;
-        bool end_of_sweep;
 
         // Statistics
         double rolling_mean;

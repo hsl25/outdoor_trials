@@ -9,7 +9,6 @@
 
 Buffer::Buffer() {
     // Initialise variables 
-    end_of_sweep = 0;
     head = 0;
     calib_index = 0;
     buffer_count = 0;
@@ -37,28 +36,8 @@ void Buffer::add_rolling_sample(uint16_t sample) {
 
 }
 
-void Buffer::add_calib_sample(uint16_t sample) {
-    calib_buffer[calib_index] = sample;
-
-    // Update sample number accordingly
-    // The servo will sweep from 0 degrees to 180 degrees, then 180 degrees back to 0 degrees
-    // Therefore, the index in the buffer has to go from 0 to 179, then 179 back down to 0
-    if (end_of_sweep == 0) {
-        if (calib_index == 179) {
-            end_of_sweep = !end_of_sweep;
-        } else {
-            calib_index++;
-        }
-    }
-
-    if (end_of_sweep == 1) {
-        if (calib_index == 0) {
-            end_of_sweep = !end_of_sweep;
-        } else {
-            calib_index--;
-        }
-    }
-
+void Buffer::add_calib_sample(float sample, int index) {
+    calib_buffer[index] += sample;
 }
 
 void Buffer::compute_stats() {

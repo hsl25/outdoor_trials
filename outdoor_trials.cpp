@@ -53,7 +53,10 @@ int main() {
                 // Then, the data point is added to the buffer
                 // This is step 3
                 uint16_t lidar_data = tof.read_tof_continuous();
-                buffer.add_calib_sample(lidar_data); 
+                // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
+                // I define 1 sweep as 0 -> 180 and 180 -> 0
+                float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
+                buffer.add_calib_sample(temp, i); 
 
                 // Toggle the flag if the servo reaches the end of the sweep
                 if (i == MAX_SERVO_ANGLE) {
@@ -72,7 +75,8 @@ int main() {
                 // Then, the data point is added to the buffer
                 // This is step 3
                 uint16_t lidar_data = tof.read_tof_continuous();
-                buffer.add_calib_sample(lidar_data); 
+                float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
+                buffer.add_calib_sample(temp, i);  
 
                 // Toggle the flag if the servo reaches the end of the sweep
                 if (i == 0) {
