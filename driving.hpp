@@ -22,19 +22,19 @@
 
 //  ==================== PWM Pins used (1 speed pin per motor) ====================
 #define MOTOR1_PWM_PIN 3    // GP3 - motor 1
-#define MOTOR2_PWM_PIN 11    // GP5 - motor 2
-#define MOTOR3_PWM_PIN 13    // GP7 - motor 3
-#define MOTOR4_PWM_PIN 5    // GP9 - motor 4
-#define MOTOR5_PWM_PIN 7   // GP11 - motor 5
-#define MOTOR6_PWM_PIN 9   // GP13 - motor 6
+#define MOTOR2_PWM_PIN 11    // GP11 - motor 2
+#define MOTOR3_PWM_PIN 13    // GP3 - motor 3
+#define MOTOR4_PWM_PIN 5    // GP5 - motor 4
+#define MOTOR5_PWM_PIN 7   // GP7 - motor 5
+#define MOTOR6_PWM_PIN 9   // GP9 - motor 6
 
 //  ==================== Direction Pins used (1 direction pin per motor) ====================
 #define MOTOR1_DIR_PIN 2  // GP2 - motor 1
-#define MOTOR2_DIR_PIN 10  // GP4 - motor 2
-#define MOTOR3_DIR_PIN 12  // GP6 - motor 3
-#define MOTOR4_DIR_PIN 4  // GP8 - motor 4
-#define MOTOR5_DIR_PIN 6 // GP10 - motor 5 
-#define MOTOR6_DIR_PIN 8 // GP12 - motor 6 
+#define MOTOR2_DIR_PIN 10  // GP10 - motor 2
+#define MOTOR3_DIR_PIN 12  // GP12 - motor 3
+#define MOTOR4_DIR_PIN 4  // GP4 - motor 4
+#define MOTOR5_DIR_PIN 6 // GP6 - motor 5 
+#define MOTOR6_DIR_PIN 8 // GP8 - motor 6 
 
 //  ==================== Motor slices used (1 slice per 2 motors) ====================
 #define MOTOR12_SLICE 1 // 1A, 1B
