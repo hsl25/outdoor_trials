@@ -43,7 +43,7 @@ int main() {
     int num_sweeps = 0;
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
-    while (num_sweeps <= 10) {
+    while (num_sweeps < CALIBRATION_SWEEPS) {
         while (!servo_end_flag) {
             for (int i = 0; i < MAX_SERVO_ANGLE; i++) {
                 // Now increment the angle of the servo by 1 degree
