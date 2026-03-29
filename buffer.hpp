@@ -24,7 +24,7 @@ class Buffer {
         bool is_ready();
         
     private:
-        // Circular buffer 
+        // Buffers  
         uint16_t lidar_buffer[N];
         uint16_t filtered_data[N];
         uint16_t calib_buffer[MAX_SERVO_ANGLE + 1];

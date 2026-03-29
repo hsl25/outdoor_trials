@@ -1,3 +1,10 @@
+// Converting from PWM to angle
+// Refer to this link: https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/ 
+// The PWM of the signal determines the angle the servo motor will rotate to
+// A 1.0ms pulse corresponds to 0 degrees
+// A 1.5ms pulse corresponds to the central position of 90 degrees
+// A 2.0ms pulse corresponds to 180 degrees
+
 #include <iostream>
 #include <stdio.h>
 #include <cstdint>
@@ -12,7 +19,7 @@
 
 // Constructor
 Servo::Servo() {
-    single_angle = 90; // Default angle for single position
+    default_angle = 90; // Default angle for single position
 }
 
 void Servo::init_pwm(uint32_t pin, float duty) {
@@ -48,12 +55,6 @@ void Servo::set_angle(int angle) {
         angle = 180;
     }
 
-    // Now I need to convert from PWM to angle
-    // Refer to this link: https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/ 
-    // The PWM of the signal determines the angle the servo motor will rotate to
-    // A 1.0ms pulse corresponds to 0 degrees
-    // A 1.5ms pulse corresponds to the central position of 90 degrees
-    // A 2.0ms pulse corresponds to 180 degrees
     float pulse_width = 1.0 + (angle / 180.0) * 1.0; // Linear interpolation between 1.0ms and 2.0ms
     float duty_cycle = pulse_width / PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
 
@@ -61,6 +62,39 @@ void Servo::set_angle(int angle) {
     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
     servo.init_pwm(PWM_PIN, duty_cycle);
 
+}
+
+void set_zero() {
+    Servo servo;
+
+    float duty_cycle = ZERO_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
+
+    // Set the PWM duty cycle to control the servo angle
+    // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
+    servo.init_pwm(PWM_PIN, duty_cycle);
+    
+}
+
+void set_ninety() {
+    Servo servo;
+
+    float duty_cycle = NINETY_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
+
+    // Set the PWM duty cycle to control the servo angle
+    // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
+    servo.init_pwm(PWM_PIN, duty_cycle);
+    
+}
+
+void set_one_eighty() {
+    Servo servo;
+
+    float duty_cycle = ONE_EIGHTY_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
+
+    // Set the PWM duty cycle to control the servo angle
+    // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
+    servo.init_pwm(PWM_PIN, duty_cycle);
+    
 }
 
 // This function sweeps the servo from 0 degrees to 180 degrees and then back to 0 degrees

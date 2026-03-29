@@ -38,7 +38,7 @@ void Buffer::add_rolling_sample(uint16_t sample) {
 
 void Buffer::add_calib_sample(float sample, int index) {
     calib_buffer[index] += sample;
-}
+}                                   
 
 void Buffer::compute_stats() {
     if (buffer_count < N) {

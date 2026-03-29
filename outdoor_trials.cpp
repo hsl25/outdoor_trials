@@ -14,7 +14,7 @@ Buffer buffer;
 Servo servo;
 
 int main() {
-    // Initialise serial monitor just in case
+    // Initialise serial monitor just in case I need it for debugging 
     stdio_init_all();
 
     // Initialise I2C and UART
