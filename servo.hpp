@@ -1,9 +1,13 @@
 #ifndef SERVO_HPP
 #define SERVO_HPP
 
+#include <pico/stdlib.h>
+#include <hardware/pwm.h>
+
 // PWM defines
 #define PWM_PIN 18 // GP18 used for PWM control of the front servo motor
-#define TOP 3214 // Will adjust this later but I just copied this from driving.hpp for now
+#define PWM_DIVIDER 64.0f // The servo needs to receive a 50Hz signal, so we need to adjust the divider and TOP value. Remember, the clk frequency on the RP2040 is around 125MHz
+#define PWM_TOP 39062 // Will adjust this later but I just copied this from driving.hpp for now
 #define SERVO_DUTY_CYCLE 0.5 // Will be tuned later
 #define PWM_PERIOD 20.0 // 20ms period for standard servo control
 
@@ -20,10 +24,11 @@ class Servo {
         Servo();
         void init_pwm(uint32_t pin, float duty);
         void init_servo();
-        void set_angle(int angle); // This function might not work as initially hoped, so use the other 3 (directly below) for now
-        void set_zero();
-        void set_ninety();
-        void set_one_eighty();
+        void set_angle(int angle); 
+        // Not needed for the time being
+        // void set_zero();
+        // void set_ninety();
+        // void set_one_eighty();
         void single_sweep();
     private:
         int default_angle; // This is the angle for a single position of the servo 
