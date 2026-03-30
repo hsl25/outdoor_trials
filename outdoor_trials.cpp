@@ -72,14 +72,13 @@ int main() {
             uint16_t lidar_data = tof.read_tof_continuous();
             float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
             buffer.add_calib_sample(temp, i);  
-            
+
         }
         
         num_sweeps++;
 
     }
     
-
     // Before the rover starts moving, scan the surroundings N times to get mean values for distances 
     // This is the initial calibration stage
     // Still need to modify this function to add data into a buffer and calculate mean distances
@@ -87,10 +86,10 @@ int main() {
         servo.single_sweep();
     }
 
-    while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
-    }
+    // For debugging
+    printf("Rover calibration complete.\n");
+
+    return 0;
 }
 
 
