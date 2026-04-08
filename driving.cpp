@@ -233,9 +233,6 @@ void Drive::turn_right(float speed_ratio) {
 // ---------------- SKID STEERING ----------------
 void Drive::skid_left() {
 
-    brake();
-    sleep_ms(50);
-
     // 0 forwardsm, 1 backwards
     gpio_put(MOTOR1_DIR_PIN, 1);
     gpio_put(MOTOR2_DIR_PIN, 1);
@@ -254,9 +251,6 @@ void Drive::skid_left() {
 
 
 void Drive::skid_right() {
-
-    brake();
-    sleep_ms(50);
 
     gpio_put(MOTOR1_DIR_PIN, 0);
     gpio_put(MOTOR2_DIR_PIN, 0);

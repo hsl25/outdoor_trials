@@ -7,6 +7,7 @@
 #include "driving.hpp"
 #include "tof.hpp"
 #include "servo.hpp"
+#include "IMU.hpp"
 
 // Defines
 #define ROVER_WIDTH 600 // Width of the rover in mm
@@ -18,6 +19,7 @@ TOF tof;
 Drive drive;
 Buffer buffer;
 Servo servo;
+IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
 
 uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1];
 
@@ -31,6 +33,14 @@ int main() {
 
     // Setting up the VL53L0X LiDAR and checking for errors
     tof.device_setup();
+
+    // Initialise IMU
+    imu.init();
+
+    // Initialise motors
+    drive.init_pwm_mode();
+    drive.init_clk_divider();
+    drive.setup_motors();
 
     // TOF calibration
     // This involves checking for errors and setting up timing budget
@@ -95,6 +105,59 @@ int main() {
     printf("Rover calibration complete.\n");
 
     // Implementing a function to enable the rover to skid-steer and face a specific angle 
+    int test_angle = 20;
+    float yaw_angle = 0.0f;
+    
+    float start_yaw = imu.read().yaw_deg;
+    float delta = 0.0f;
+
+    if (test_angle < 90) {
+        // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
+        drive.skid_left();
+
+        while (true) {
+            imu.update();
+            ImuData data = imu.read();
+
+            // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+            if (data.valid) {
+                delta = data.yaw_deg - start_yaw;
+
+                if (fabs(test_angle - delta) < 1.0f) {
+                    drive.brake();
+                    break;
+                }
+            } else {
+                printf("IMU data invalid\r\n");
+            }
+
+        }
+
+    } else if (test_angle > 90) {
+        drive.skid_right();
+
+        while (true) {
+            imu.update();
+            ImuData data = imu.read();
+
+            // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+            if (data.valid) {
+                delta = data.yaw_deg - start_yaw;
+
+                if (fabs(test_angle - delta) < 1.0f) {
+                    drive.brake();
+                    break;
+                }
+            } else {
+                printf("IMU data invalid\r\n");
+            }
+
+        }
+
+    } else if (test_angle == 90) {
+        // More to be done here later
+        drive.drive_forward();
+    }
 
     // Implementing a new algorithm to look for widest gaps instead of looking for largest distances 
     

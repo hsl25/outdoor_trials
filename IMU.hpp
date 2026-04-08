@@ -4,6 +4,9 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
+#define IMU_SDA_PIN 20
+#define IMU_SCL_PIN 21 
+
 extern "C" {
 #include "MPU6050.h"
 }
@@ -30,8 +33,8 @@ struct ImuData {
 class IMU {
 public:
     IMU(i2c_inst_t* i2c_port = i2c0,
-        uint sda_pin = 20,
-        uint scl_pin = 21,
+        uint sda_pin = IMU_SDA_PIN,
+        uint scl_pin = IMU_SCL_PIN,
         uint8_t address = MPU6050_ADDRESS_A0_GND);
 
     bool init();
