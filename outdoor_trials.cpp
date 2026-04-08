@@ -94,6 +94,8 @@ int main() {
     // For debugging
     printf("Rover calibration complete.\n");
 
+    // Implementing a function to enable the rover to skid-steer and face a specific angle 
+
     // Implementing a new algorithm to look for widest gaps instead of looking for largest distances 
     
 
