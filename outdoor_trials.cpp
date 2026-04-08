@@ -108,10 +108,11 @@ int main() {
     int test_angle = 20;
     float yaw_angle = 0.0f;
     
+    imu.update();
     float start_yaw = imu.read().yaw_deg;
     float delta = 0.0f;
 
-    if (test_angle < 90) {
+    if (test_angle > 0) {
         // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
         drive.skid_left();
 
@@ -123,7 +124,7 @@ int main() {
             if (data.valid) {
                 delta = data.yaw_deg - start_yaw;
 
-                if (fabs(test_angle - delta) < 1.0f) {
+                if (delta >= test_angle) {
                     drive.brake();
                     break;
                 }
@@ -131,9 +132,12 @@ int main() {
                 printf("IMU data invalid\r\n");
             }
 
+            // Add small delay to reduce I2C spam
+            sleep_ms(10);
+
         }
 
-    } else if (test_angle > 90) {
+    } else if (test_angle < 0) {
         drive.skid_right();
 
         while (true) {
@@ -144,7 +148,7 @@ int main() {
             if (data.valid) {
                 delta = data.yaw_deg - start_yaw;
 
-                if (fabs(test_angle - delta) < 1.0f) {
+                if (delta <= test_angle) {
                     drive.brake();
                     break;
                 }
@@ -152,9 +156,12 @@ int main() {
                 printf("IMU data invalid\r\n");
             }
 
+            // Add small delay to reduce I2C spam
+            sleep_ms(10);
+
         }
 
-    } else if (test_angle == 90) {
+    } else if (test_angle == 0) {
         // More to be done here later
         drive.drive_forward();
     }
