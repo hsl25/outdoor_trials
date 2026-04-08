@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include <math.h>
 
 // File includes
 #include "buffer.hpp"
@@ -7,11 +8,18 @@
 #include "tof.hpp"
 #include "servo.hpp"
 
+// Defines
+#define ROVER_WIDTH 600 // Width of the rover in mm
+#define ROVER_LENGTH 440 // Length of rover in mm
+#define SAFETY_MARGIN 10 // 10mm safety margin added to the width and length of the rover
+
 // Instantiate objects
 TOF tof;
 Drive drive;
 Buffer buffer;
 Servo servo;
+
+uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1];
 
 int main() {
     // Initialise serial monitor just in case I need it for debugging 
@@ -41,7 +49,7 @@ int main() {
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
     while (num_sweeps < CALIBRATION_SWEEPS) {
-        for (int i = 0; i < MAX_SERVO_ANGLE; i++) {
+        for (int i = 0; i <= MAX_SERVO_ANGLE; i++) {
             // Now increment the angle of the servo by 1 degree
             servo.set_angle(i);
 
@@ -55,11 +63,13 @@ int main() {
             // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
             // I define 1 sweep as 0 -> 180 and 180 -> 0
             float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
-            buffer.add_calib_sample(temp, i); 
+            lidar_buffer[i] += (uint16_t) temp;
+            // // Instead of making a function to add a sample, do it normally for any buffer
+            // buffer.add_calib_sample(temp, i); 
   
         }
 
-        for (int i = MAX_SERVO_ANGLE; i > 0; i--) {
+        for (int i = MAX_SERVO_ANGLE; i >= 0; i--) {
             // Now increment the angle of the servo by 1 degree
             servo.set_angle(i);
 
@@ -71,23 +81,21 @@ int main() {
             // This is step 3
             uint16_t lidar_data = tof.read_tof_continuous();
             float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            buffer.add_calib_sample(temp, i);  
+            lidar_buffer[i] += (uint16_t) temp;
+            // // Instead of making a function to add a sample, do it normally for any buffer 
+            // buffer.add_calib_sample(temp, i);  
 
         }
         
         num_sweeps++;
 
     }
-    
-    // Before the rover starts moving, scan the surroundings N times to get mean values for distances 
-    // This is the initial calibration stage
-    // Still need to modify this function to add data into a buffer and calculate mean distances
-    for (unsigned int i = 0; i < CALIBRATION_SWEEPS; i++) {
-        servo.single_sweep();
-    }
 
     // For debugging
     printf("Rover calibration complete.\n");
+
+    // Implementing a new algorithm to look for widest gaps instead of looking for largest distances 
+    
 
     return 0;
 }
