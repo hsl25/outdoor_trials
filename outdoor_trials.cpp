@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include <math.h>
+#include <vector>
 
 // File includes
 #include "buffer.hpp"
@@ -13,6 +14,7 @@
 #define ROVER_WIDTH 600 // Width of the rover in mm
 #define ROVER_LENGTH 440 // Length of rover in mm
 #define SAFETY_MARGIN 10 // 10mm safety margin added to the width and length of the rover
+#define ALPHA 0.2 // Safety constant
 
 // Instantiate objects
 TOF tof;
@@ -104,6 +106,47 @@ int main() {
     // For debugging
     printf("Rover calibration complete.\n");
 
+    // OK so now the rover has to identify the direction of greatest clearance 
+    // This is simply looping through the buffer and identifying the index with the greatest clearance  
+
+    int largest_clearance_angle = 0; 
+    uint16_t largest_distance = 0; 
+
+    for (int i = 1; i <= MAX_SERVO_ANGLE; i++) { 
+        if (lidar_buffer[i] > largest_distance) { 
+            largest_clearance_angle = i; 
+            largest_distance = lidar_buffer[i]; 
+        } 
+    } 
+
+    // Calculate the minimum angle needed to see if the gap is large enough 
+    // atan = arctan 
+    float temp_angle = 2 * atan((ROVER_WIDTH + SAFETY_MARGIN) / (2 * largest_distance)); 
+
+    // Now I need to round up - always round up because if the minimum angle is 30.2 degrees, it is safer to have a larger angle 
+    // I can do this by adding 1 and then casting to an int, so the decimal places will be 'chopped off' 
+    // I also need to ensure that the minimum angle is even so that I have an even number angle either side of... 
+    // ... the 'greatest_distance_angle' 
+    int min_sweep_angle = (int) (temp_angle + 1); 
+
+    if (min_sweep_angle % 2 != 0) { 
+        min_sweep_angle++; 
+    } 
+
+    float roll_mean = 0.0f;
+
+    // Now scan through the window we just calculated 
+    for (int j = largest_clearance_angle; j >= largest_clearance_angle - (min_sweep_angle / 2); j--) { 
+        // I plan on taking a rolling mean of a few data points 
+        if (j == largest_clearance_angle - 1) {
+            float alpha = lidar_buffer[largest_clearance_angle - 1] / lidar_buffer[largest_clearance_angle];
+        }
+
+        
+        roll_mean += lidar_buffer[j];
+    } 
+
+
     // Implementing a function to enable the rover to skid-steer and face a specific angle 
     int test_angle = 20;
     float yaw_angle = 0.0f;
@@ -165,10 +208,7 @@ int main() {
         // More to be done here later
         drive.drive_forward();
     }
-
-    // Implementing a new algorithm to look for widest gaps instead of looking for largest distances 
     
-
     return 0;
 }
 
