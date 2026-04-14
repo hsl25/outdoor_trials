@@ -42,6 +42,7 @@ add_executable(outdoor_trials
                tof.cpp
                navigation.cpp
                servo.cpp
+               navigation.cpp
                IMU.cpp
                MPU6050.c
                vl53l0x/core/src/vl53l0x_api_calibration.c

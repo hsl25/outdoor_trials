@@ -9,6 +9,7 @@
 #include "tof.hpp"
 #include "servo.hpp"
 #include "IMU.hpp"
+#include "navigation.hpp"
 
 // Defines
 #define ROVER_WIDTH 600 // Width of the rover in mm
@@ -22,6 +23,7 @@ Drive drive;
 Buffer buffer;
 Servo servo;
 IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
+Navigation nav;
 
 uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1];
 
@@ -133,19 +135,87 @@ int main() {
         min_sweep_angle++; 
     } 
 
-    float roll_mean = 0.0f;
+    
+    
+    float beta1 = 0.0f; // Rolling value for the 1st scan
+    int tracker1 = 0; // Used to keep track of the last valid value
+    float roll_mean1 = 0.0f;
+    float end_distance1 = 0.0f;
+    int end_angle1 = 0;
 
     // Now scan through the window we just calculated 
     for (int j = largest_clearance_angle; j >= largest_clearance_angle - (min_sweep_angle / 2); j--) { 
-        // I plan on taking a rolling mean of a few data points 
-        if (j == largest_clearance_angle - 1) {
-            float alpha = lidar_buffer[largest_clearance_angle - 1] / lidar_buffer[largest_clearance_angle];
+        if (j == largest_clearance_angle) {
+            roll_mean1 = lidar_buffer[j];
         }
 
-        
-        roll_mean += lidar_buffer[j];
+        // At least two points are needed to calculate an initial value for beta 
+        if (j == largest_clearance_angle - 1) {
+            // Calculate beta. Beta is the ratio between consecutive points. It is used to identify whether or not the next point is a big jump or not
+            beta1 = lidar_buffer[largest_clearance_angle - 1] / lidar_buffer[largest_clearance_angle];
+            tracker1 = largest_clearance_angle - 1;
+        }
+
+        // Check if the next measurement we look at in the buffer lies in the inequality
+        // If it does, update the rolling mean and the beta value
+        if ((roll_mean1 - (beta1 * ALPHA) <= lidar_buffer[j]) && (lidar_buffer[j] <= roll_mean1 + (beta1 * ALPHA))) {
+            // If the next point falls into the inequality, update the rolling mean
+            roll_mean1 += lidar_buffer[j];
+            // Also update beta 
+            beta1 += lidar_buffer[j] / lidar_buffer[tracker1];
+            // Update tracker1
+            tracker1 = j; 
+
+        } else {
+            // If the value does not fall into the inequality, then it could be a large jump
+            // To check for large jumps, we need to check for consistency, so start a new set of statistics and see if the values are consistent
+            // We check for consistency because the value could be a glitch, or could be a very small thing
+            end_distance1 = lidar_buffer[j];
+            end_angle1 = j;
+        }
+
     } 
 
+    float beta2 = 0.0f; // Rolling value for the 2nd scan
+    int tracker2 = 0; // Used to keep track of the last valid value
+    float roll_mean2 = 0.0f;
+    float end_distance2 = 0.0f;
+    int end_angle2 = 0;
+
+    // Now scan the other way
+    for (int k = largest_clearance_angle; k <= largest_clearance_angle + (min_sweep_angle / 2); k++) { 
+        if (k == largest_clearance_angle) {
+            roll_mean2 = lidar_buffer[k];
+        }
+
+        // At least two points are needed to calculate an initial value for beta 
+        if (k == largest_clearance_angle + 1) {
+            // Calculate beta. Beta is the ratio between consecutive points. It is used to identify whether or not the next point is a big jump or not
+            beta2 = lidar_buffer[largest_clearance_angle + 1] / lidar_buffer[largest_clearance_angle];
+            tracker2 = largest_clearance_angle + 1;
+        }
+
+        // Check if the next measurement we look at in the buffer lies in the inequality
+        // If it does, update the rolling mean and the beta value
+        if ((roll_mean2 - (beta2 * ALPHA) <= lidar_buffer[k]) && (lidar_buffer[k] <= roll_mean2 + (beta2 * ALPHA))) {
+            // If the next point falls into the inequality, update the rolling mean
+            roll_mean2 += lidar_buffer[k];
+            // Also update beta 
+            beta2 += lidar_buffer[k] / lidar_buffer[tracker2];
+            // Update tracker1
+            tracker2 = k; 
+
+        } else {
+            // If the value does not fall into the inequality, then it could be a large jump
+            // To check for large jumps, we need to check for consistency, so start a new set of statistics and see if the values are consistent
+            // We check for consistency because the value could be a glitch, or could be a very small thing
+            end_distance2 = lidar_buffer[k];
+            end_angle2 = k;
+        }
+
+    }
+
+    float gap_width = nav.calc_width(end_distance1, end_angle1, end_distance2, end_angle2);
 
     // Implementing a function to enable the rover to skid-steer and face a specific angle 
     int test_angle = 20;
