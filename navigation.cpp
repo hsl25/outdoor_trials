@@ -53,7 +53,7 @@ int Navigation::calc_min_sweep_angle(float dist) {
 // - the vector of peak angles 
 // - the vector of minimum sweep angles 
 // - the entire LiDAR buffer and its size 
-std::vector<float> Navigation::calc_gap_width(std::vector<uint16_t> peak_angles, std::vector<uint16_t> min_sweep_angles, uint16_t buf[], int size) {
+std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size) {
     // Define a vector for the gap widths
     std::vector<float> gap_widths;
     
@@ -166,6 +166,54 @@ std::vector<float> Navigation::calc_gap_width(std::vector<uint16_t> peak_angles,
     
 }
 
+float Navigation::choose_direction(std::vector<float> gaps) {
+    std::vector<float> valid_gaps;
+    for (int i = 0; i < gaps.size(); i++) {
+        if (gaps[i] < ROVER_WIDTH + SAFETY_MARGIN) {
+            // The gap is too small so continue past this iteration
+            continue;
+        } else {
+            // Tne gap is greater than so we can consider it
+            // We want to choose the biggest valid gap
+            valid_gaps.push_back(gaps[i]);
+        }
+    }
+
+    // Now find the largest gap width
+    float largest_gw = 0;
+
+    for (int k = 0; k < valid_gaps.size(); k++) {
+        if (valid_gaps[k] > largest_gw) {
+            largest_gw = valid_gaps[k];
+        }
+    }
+
+    return largest_gw;
+
+}
+
+int Navigation::find_peak(float max_gap, std::vector<float> gaps) {
+    int index = 0;
+    for (int k = 0; k < gaps.size(); k++) {
+        if (max_gap == gaps[k]) {
+            k = index;
+            break;
+        }
+    }
+
+    return index;
+}
+
+int Navigation::find_angle(uint16_t buf[], int size, float peak) {
+    int angle = 0;
+    for (int i = 0; i < size; i++) {
+        if (buf[i] == peak) {
+            angle = i;
+        }
+    }
+
+    return angle;
+}
 
 
 
