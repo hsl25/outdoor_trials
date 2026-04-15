@@ -106,18 +106,6 @@ int main() {
     // Identify all the angles at which peaks occur in the buffer
     std::vector<int> peak_angles = nav.calc_peaks(lidar_buffer, MAX_SERVO_ANGLE + 1);
 
-    // OK so now the rover has to identify the direction of greatest clearance 
-    // This is simply looping through the buffer and identifying the index with the greatest clearance  
-    int largest_clearance_angle = 0; 
-    uint16_t largest_distance = 0; 
-
-    for (int i = 1; i <= MAX_SERVO_ANGLE; i++) { 
-        if (lidar_buffer[i] > largest_distance) { 
-            largest_clearance_angle = i; 
-            largest_distance = lidar_buffer[i]; 
-        } 
-    } 
-
     std::vector<int> min_sweep_angles;
 
     for (int x = 0; x < peak_angles.size(); x++) {
