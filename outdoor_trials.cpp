@@ -132,68 +132,75 @@ int main() {
     // The values for gap_widths correspond to the peaks in peak_angles
     int chosen_angle = peak_angles[largest_gap_index];
 
-    // Implementing a function to enable the rover to skid-steer and face a specific angle 
-    // int test_angle = 20;
-    float yaw_angle = 0.0f;
-    
-    imu.update();
-    float start_yaw = imu.read().yaw_deg;
-    float delta = 0.0f;
+    // Extract the distance from the lidar buffer using the angle index 
+    float chosen_distance = lidar_buffer[chosen_angle];
 
-    if (chosen_angle > 0) {
-        // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
-        drive.skid_left();
+    if (chosen_distance > ROVER_WIDTH + SAFETY_MARGIN) {
+        // Implementing a function to enable the rover to skid-steer and face a specific angle 
+        // int test_angle = 20;
+        float yaw_angle = 0.0f;
+        
+        imu.update();
+        float start_yaw = imu.read().yaw_deg;
+        float delta = 0.0f;
 
-        while (true) {
-            imu.update();
-            ImuData data = imu.read();
+        if (chosen_angle > 0) {
+            // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
+            drive.skid_left();
 
-            // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
-            if (data.valid) {
-                delta = data.yaw_deg - start_yaw;
+            while (true) {
+                imu.update();
+                ImuData data = imu.read();
 
-                if (delta >= chosen_angle) {
-                    drive.brake();
-                    break;
+                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+                if (data.valid) {
+                    delta = data.yaw_deg - start_yaw;
+
+                    if (delta >= chosen_angle) {
+                        drive.brake();
+                        break;
+                    }
+                } else {
+                    printf("IMU data invalid\r\n");
                 }
-            } else {
-                printf("IMU data invalid\r\n");
+
+                // Add small delay to reduce I2C spam
+                sleep_ms(10);
+
             }
 
-            // Add small delay to reduce I2C spam
-            sleep_ms(10);
+        } else if (chosen_angle < 0) {
+            drive.skid_right();
 
-        }
+            while (true) {
+                imu.update();
+                ImuData data = imu.read();
 
-    } else if (chosen_angle < 0) {
-        drive.skid_right();
+                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+                if (data.valid) {
+                    delta = data.yaw_deg - start_yaw;
 
-        while (true) {
-            imu.update();
-            ImuData data = imu.read();
-
-            // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
-            if (data.valid) {
-                delta = data.yaw_deg - start_yaw;
-
-                if (delta <= chosen_angle) {
-                    drive.brake();
-                    break;
+                    if (delta <= chosen_angle) {
+                        drive.brake();
+                        break;
+                    }
+                } else {
+                    printf("IMU data invalid\r\n");
                 }
-            } else {
-                printf("IMU data invalid\r\n");
+
+                // Add small delay to reduce I2C spam
+                sleep_ms(10);
+
             }
 
-            // Add small delay to reduce I2C spam
-            sleep_ms(10);
-
+        } else if (chosen_angle == 0) {
+            // More to be done here later
+            drive.drive_forward();
         }
+    } else if (chosen_distance <= ROVER_WIDTH + SAFETY_MARGIN) {
 
-    } else if (chosen_angle == 0) {
-        // More to be done here later
-        drive.drive_forward();
     }
-    
+
     return 0;
 }
 
