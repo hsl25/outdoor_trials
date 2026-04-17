@@ -22,7 +22,7 @@ std::vector<int> Navigation::calc_peaks(uint16_t arr[], int size) {
     // We use int because the angles are all integers 
     std::vector<int> peaks;
 
-    for (unsigned int i = 1; i < size; i++) {
+    for (unsigned int i = 1; i < size - 1; i++) {
         // Keep checking the data until the distances stop increasing
         if((arr[i] > arr[i - 1]) && (arr[i] > arr[i + 1])) {
             peaks.push_back(i);
@@ -35,6 +35,7 @@ std::vector<int> Navigation::calc_peaks(uint16_t arr[], int size) {
 
 int Navigation::calc_min_sweep_angle(float dist) {
     float temp_angle = 2 * atan((ROVER_WIDTH + SAFETY_MARGIN) / (2 * dist)); 
+    temp_angle *= DEG_TO_RAD;
 
     // Now I need to round up - always round up because if the minimum angle is 30.2 degrees, it is safer to have a larger angle 
     // I can do this by adding 1 and then casting to an int, so the decimal places will be 'chopped off' 
@@ -84,7 +85,13 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
 
                 // Check 'num_checks' times to see if the adjacent points are also below the threshold distance
                 for (unsigned int i = 0; i < num_checks; i++) {
+                    // Lower clamp
                     if ((k - i) < 0) {
+                        break;
+                    }
+
+                    // Upper clamp
+                    if ((k + i) > size) {
                         break;
                     }
 
@@ -103,12 +110,12 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
                     // Record the distance measurement at which we cross over, and the angle at which this occurs
                     // Then break out of the for loop
                     // Bear in mind, I need the last good point, not the first bad point. This is why I use j + 1
-                    end_distance1 = buf[k];
-                    end_angle1 = k;
+                    end_distance1 = buf[k + 1];
+                    end_angle1 = k + 1;
                     // Now we need to break out of the outer for loop, since the edge has been detected
                     break;
                 }
-            } else if (buf[j] > dist_thresholds[j]) {
+            } else if (buf[k] > dist_thresholds[j]) {
                 // We just do nothing because we want the values to be greater than the minimum threshold
                 continue;
             }
@@ -120,8 +127,15 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
                 // Reset lt_count to 0, otherwise it will keep accumulating
                 gt_count = 0;
 
+                if ((peak_angles[j] + (min_sweep_angles[j] / 2)) >= size) {
+                    break;
+                }
+
                 // Check 'num_checks' times to see if the adjacent points are also below the threshold distance
                 for (unsigned int i = 0; i < num_checks; i++) {
+                    if (k + i >= size) {
+                        break;
+                    }
 
                     if (buf[k + i] < dist_thresholds[j]) {
                         gt_count++;
@@ -138,12 +152,12 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
                     // Record the distance measurement at which we cross over, and the angle at which this occurs
                     // Then break out of the for loop
                     // Bear in mind, I need the last good point, not the first bad point. This is why I use j + 1
-                    end_distance2 = buf[k];
-                    end_angle2 = k;
+                    end_distance2 = buf[k - 1];
+                    end_angle2 = k - 1;
                     // Now we need to break out of the outer for loop, since the edge has been detected
                     break;
                 }
-            } else if (buf[j] > dist_thresholds[j]) {
+            } else if (buf[k] > dist_thresholds[j]) {
                 // We just do nothing because we want the values to be greater than the minimum threshold
                 continue;
             }
@@ -166,54 +180,20 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
     
 }
 
-float Navigation::choose_direction(std::vector<float> gaps) {
-    std::vector<float> valid_gaps;
-    for (int i = 0; i < gaps.size(); i++) {
-        if (gaps[i] < ROVER_WIDTH + SAFETY_MARGIN) {
-            // The gap is too small so continue past this iteration
-            continue;
-        } else {
-            // Tne gap is greater than so we can consider it
-            // We want to choose the biggest valid gap
-            valid_gaps.push_back(gaps[i]);
-        }
-    }
-
+int Navigation::choose_direction(std::vector<float> gaps) {
     // Now find the largest gap width
     float largest_gw = 0;
+    int index;
 
-    for (int k = 0; k < valid_gaps.size(); k++) {
-        if (valid_gaps[k] > largest_gw) {
-            largest_gw = valid_gaps[k];
-        }
-    }
-
-    return largest_gw;
-
-}
-
-int Navigation::find_peak(float max_gap, std::vector<float> gaps) {
-    int index = 0;
-    for (int k = 0; k < gaps.size(); k++) {
-        if (max_gap == gaps[k]) {
-            k = index;
-            break;
+    for (int i = 0; i < gaps.size(); i++) {
+        if (gaps[i] > largest_gw) {
+            largest_gw = gaps[i];
+            index = i;
         }
     }
 
     return index;
+
 }
-
-int Navigation::find_angle(uint16_t buf[], int size, float peak) {
-    int angle = 0;
-    for (int i = 0; i < size; i++) {
-        if (buf[i] == peak) {
-            angle = i;
-        }
-    }
-
-    return angle;
-}
-
 
 

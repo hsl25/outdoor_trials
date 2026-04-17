@@ -20,7 +20,8 @@ Servo servo;
 IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
 Navigation nav;
 
-uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1];
+uint32_t accum[MAX_SERVO_ANGLE + 1] = {0};
+uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1] = {0};
 
 int main() {
     // Initialise serial monitor just in case I need it for debugging 
@@ -71,8 +72,9 @@ int main() {
             uint16_t lidar_data = tof.read_tof_continuous();
             // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
             // I define 1 sweep as 0 -> 180 and 180 -> 0
-            float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
-            lidar_buffer[i] += (uint16_t) temp;
+            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
+            accum[i] += lidar_data;
+            // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer
             // buffer.add_calib_sample(temp, i); 
   
@@ -89,8 +91,9 @@ int main() {
             // Then, the data point is added to the buffer
             // This is step 3
             uint16_t lidar_data = tof.read_tof_continuous();
-            float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            lidar_buffer[i] += (uint16_t) temp;
+            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
+            accum[i] += lidar_data;
+            // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer 
             // buffer.add_calib_sample(temp, i);  
 
@@ -98,6 +101,10 @@ int main() {
         
         num_sweeps++;
 
+    }
+
+    for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
+        lidar_buffer[i] = accum[i] / (2 * CALIBRATION_SWEEPS);
     }
 
     // For debugging
@@ -118,21 +125,22 @@ int main() {
     std::vector<float> gap_widths = nav.calc_gap_width(peak_angles, min_sweep_angles, lidar_buffer, MAX_SERVO_ANGLE + 1);
 
     // Find the largest gap out of all the calculated gaps
-    float largest_gap = nav.choose_direction(gap_widths);
+    // This returns the index of the largest gap
+    int largest_gap_index = nav.choose_direction(gap_widths);
 
     // Now I need to track back and find the peak responsible for this gap
-    float chosen_peak = nav.find_peak(largest_gap, gap_widths);
-    int chosen_angle = nav.find_angle(lidar_buffer, MAX_SERVO_ANGLE + 1, chosen_peak);
+    // The values for gap_widths correspond to the peaks in peak_angles
+    int chosen_angle = peak_angles[largest_gap_index];
 
     // Implementing a function to enable the rover to skid-steer and face a specific angle 
-    int test_angle = 20;
+    // int test_angle = 20;
     float yaw_angle = 0.0f;
     
     imu.update();
     float start_yaw = imu.read().yaw_deg;
     float delta = 0.0f;
 
-    if (test_angle > 0) {
+    if (chosen_angle > 0) {
         // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
         drive.skid_left();
 
@@ -144,7 +152,7 @@ int main() {
             if (data.valid) {
                 delta = data.yaw_deg - start_yaw;
 
-                if (delta >= test_angle) {
+                if (delta >= chosen_angle) {
                     drive.brake();
                     break;
                 }
@@ -157,7 +165,7 @@ int main() {
 
         }
 
-    } else if (test_angle < 0) {
+    } else if (chosen_angle < 0) {
         drive.skid_right();
 
         while (true) {
@@ -168,7 +176,7 @@ int main() {
             if (data.valid) {
                 delta = data.yaw_deg - start_yaw;
 
-                if (delta <= test_angle) {
+                if (delta <= chosen_angle) {
                     drive.brake();
                     break;
                 }
@@ -181,7 +189,7 @@ int main() {
 
         }
 
-    } else if (test_angle == 0) {
+    } else if (chosen_angle == 0) {
         // More to be done here later
         drive.drive_forward();
     }

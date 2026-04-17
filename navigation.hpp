@@ -19,9 +19,7 @@ class Navigation {
         std::vector<int> calc_peaks(uint16_t arr[], int size);
         int calc_min_sweep_angle(float dist);
         std::vector<float> calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size);
-        float choose_direction(std::vector<float> gaps);
-        int find_peak(float max_gap, std::vector<float> gaps);
-        int find_angle(uint16_t buf[], int size, float peak);
+        int choose_direction(std::vector<float> gaps);
     private:
 };
 

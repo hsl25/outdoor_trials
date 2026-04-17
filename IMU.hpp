@@ -47,8 +47,7 @@ public:
 
 private:
     bool computeDt(float& dt_s);
-    void updateStationaryState(float ax, float ay, float az,
-                               float gx, float gy, float gz);
+    void updateStationaryState(float ax, float ay, float az, float gx, float gy, float gz);
     void wrapYaw();
 
 private:
