@@ -45,6 +45,11 @@ add_executable(outdoor_trials
                navigation.cpp
                IMU.cpp
                MPU6050.c
+               dhcpserver.cpp
+               json_builder.cpp
+               state_manager.cpp
+               tcp_server.cpp
+               wifi_ap.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c
@@ -65,6 +70,7 @@ target_link_libraries(outdoor_trials
         pico_stdlib
         hardware_pwm
         pico_time
+        pico_cyw43_arch_lwip_poll
         )
 
 # Add the standard include files to the build
