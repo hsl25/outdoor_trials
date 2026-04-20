@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <vector>
 
+#include "servo.hpp"
+#include "tof.hpp"
+#include "IMU.hpp"
+
 #define DEG_TO_RAD 0.01745329251 // One radian
 #define PEAK_CHECKS 3 // Number of times we check whether the data is increasing consecutively 
 #define ROVER_WIDTH 600 // Width of the rover in mm
@@ -15,11 +19,13 @@
 class Navigation {
     public:
         Navigation();
+        std::vector<uint16_t> initial_sweep(int num_sweeps);
         float calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2);
         std::vector<int> calc_peaks(uint16_t arr[], int size);
         int calc_min_sweep_angle(float dist);
         std::vector<float> calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size);
         int choose_direction(std::vector<float> gaps);
+        void skid_into_position(int start_yaw, int final_yaw);
     private:
 };
 

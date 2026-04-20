@@ -18,6 +18,7 @@
 #define NINETY_PULSE 1.5 // PWM pulse time for 90 degrees
 #define ONE_EIGHTY_PULSE 2.0 // PWM pulse time for 180 degrees
 #define CENTRAL_ANGLE 90.0
+#define MAX_SERVO_ANGLE 180 // This is the maximum angle scope of the servo
 
 class Servo {
     public:

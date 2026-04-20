@@ -3,10 +3,90 @@
 #include <vector>
 
 #include "navigation.hpp"
+#include "servo.hpp"
+#include "IMU.hpp"
+#include "driving.hpp"
+
+TOF my_tof;
+Servo sv;
+IMU my_imu;
+Drive dr;
 
 // Constructor
 Navigation::Navigation() {
     
+}
+
+std::vector<uint16_t> Navigation::initial_sweep(int num_sweeps) {
+    // Start continuous ranging
+    // This function still needs to be modified for adding data into a buffer and calibrating
+    // This is how calibration will run:
+    // 1. The servo will start at position 0 degrees
+    // 2. The servo will increment 1 degree. It will then indicate via one of something like: toggling a bit, raising a flag, etc. 
+    // 3. The LiDAR will then check if data is available, and if it is available, it will add it to the correct buffer position
+    // 4. After data has been successfully added, the servo will increment the angle again and the process will start again
+
+    // Keep track of the number of sweeps the servo has done
+    int num = 0;
+
+    uint32_t accum[MAX_SERVO_ANGLE + 1];
+    std::vector<uint16_t> tof_buf;
+
+    // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
+    while (num < num_sweeps) {
+        for (int i = 0; i <= MAX_SERVO_ANGLE; i++) {
+            // Now increment the angle of the servo by 1 degree
+            sv.set_angle(i);
+
+            // Wait for servo to physically reach the degree
+            sleep_ms(15); 
+
+            // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
+            // Then, the data point is added to the buffer
+            // This is step 3
+            uint16_t lidar_data = my_tof.read_tof_continuous();
+            // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
+            // I define 1 sweep as 0 -> 180 and 180 -> 0
+            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
+            accum[i] += lidar_data;
+            // lidar_buffer[i] += (uint16_t) temp;
+            // // Instead of making a function to add a sample, do it normally for any buffer
+            // buffer.add_calib_sample(temp, i); 
+  
+        }
+
+        for (int i = MAX_SERVO_ANGLE; i >= 0; i--) {
+            // Now increment the angle of the servo by 1 degree
+            sv.set_angle(i);
+
+            // Wait for servo to physically reach the degree
+            sleep_ms(15); 
+
+            // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
+            // Then, the data point is added to the buffer
+            // This is step 3
+            uint16_t lidar_data = my_tof.read_tof_continuous();
+            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
+            accum[i] += lidar_data;
+            // lidar_buffer[i] += (uint16_t) temp;
+            // // Instead of making a function to add a sample, do it normally for any buffer 
+            // buffer.add_calib_sample(temp, i);  
+
+        }
+        
+        num++;
+
+    }
+
+    for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
+        tof_buf.push_back(accum[i] / (2 * num_sweeps));
+    }
+
+    // For debugging
+    printf("Rover calibration complete.\n");
+
+    return tof_buf;
+
 }
 
 float Navigation:: calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2) {
@@ -194,6 +274,71 @@ int Navigation::choose_direction(std::vector<float> gaps) {
 
     return index;
 
+}
+
+// This function should simply skid-steer into place until the angle desired is equal to the change in yaw from the initial yaw 
+// The arguments are the initial yaw (found by updating the IMU and measuring the yaw) and the final yaw (found by calculation based on the angle you desire)
+void Navigation::skid_into_position(int start_yaw, int final_yaw) {
+    float delta = 0.0f;
+    int steer_angle = final_yaw - start_yaw;
+
+    if (steer_angle > 0) {
+            // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
+            dr.skid_left();
+
+            while (true) {
+                my_imu.update();
+                ImuData data = my_imu.read();
+
+                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+                if (data.valid) {
+                    // Each time, we measure the yaw from the IMU and compare to the start_yaw until the change in yaw is the change we need
+                    delta = data.yaw_deg - start_yaw;
+
+                    // If delta >= steer_angle, then the change in angle w.r.t start_yaw is the same as or greater than the change we require, so we brake and break
+                    if (delta >= steer_angle) {
+                        dr.brake();
+                        break;
+                    }
+                } else {
+                    printf("IMU data invalid\r\n");
+                }
+
+                // Add small delay to reduce I2C spam
+                sleep_ms(10);
+
+            }
+
+        } else if (steer_angle < 0) {
+            dr.skid_right();
+
+            while (true) {
+                my_imu.update();
+                ImuData data = my_imu.read();
+
+                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
+                if (data.valid) {
+                    // Each time, we measure the yaw from the IMU and compare to the start_yaw until the change in yaw is the change we need
+                    delta = data.yaw_deg - start_yaw;
+
+                    // If delta >= steer_angle, then the change in angle w.r.t start_yaw is the same as or greater than the change we require, so we brake and break
+                    if (delta <= steer_angle) {
+                        dr.brake();
+                        break;
+                    }
+                } else {
+                    printf("IMU data invalid\r\n");
+                }
+
+                // Add small delay to reduce I2C spam
+                sleep_ms(10);
+
+            }
+
+        } else if (steer_angle == 0) {
+            // More to be done here later
+            dr.drive_forward();
+        }
 }
 
 
