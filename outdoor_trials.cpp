@@ -60,8 +60,9 @@ int main() {
 
     // Keep track of the number of sweeps the servo has done
     int num_sweeps = 0;
+    int temp = 360 / SKID_CHECK_ANGLE;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < temp; i++) {
         // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
         while (num_sweeps < CALIBRATION_SWEEPS) {
             for (int i = 0; i <= MAX_SERVO_ANGLE; i++) {
@@ -174,7 +175,7 @@ int main() {
             // Now we need to skid-steer by 90 degrees and start the entire process again, all the way from scanning and relative localisation
             imu.update(); 
             float current_yaw = imu.read().yaw_deg;
-            nav.skid_into_position(current_yaw, current_yaw + 90);
+            nav.skid_into_position(current_yaw, current_yaw + SKID_CHECK_ANGLE);
 
             // Reset variables
             num_sweeps = 0;
