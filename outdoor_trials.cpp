@@ -62,6 +62,10 @@ int main() {
     int num_sweeps = 0;
     int temp = 360 / SKID_CHECK_ANGLE;
 
+    // Establish variables
+    float chosen_distance = 0.0f;
+    int chosen_angle = 0;
+
     for (int i = 0; i < temp; i++) {
         // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
         while (num_sweeps < CALIBRATION_SWEEPS) {
@@ -116,6 +120,7 @@ int main() {
         // Identify all the angles at which peaks occur in the buffer
         std::vector<int> peak_angles = nav.calc_peaks(lidar_buffer, MAX_SERVO_ANGLE + 1);
 
+        // Make a vector of all the sweep angles at the different peaks
         std::vector<int> min_sweep_angles;
 
         for (int x = 0; x < peak_angles.size(); x++) {
@@ -136,7 +141,7 @@ int main() {
         int chosen_angle = peak_angles[largest_gap_index];
 
         // Extract the distance from the lidar buffer using the angle index 
-        float chosen_distance = lidar_buffer[chosen_angle];
+        chosen_distance = lidar_buffer[chosen_angle];
 
         if (chosen_distance > ROVER_WIDTH + SAFETY_MARGIN) {
             // Implementing a function to enable the rover to skid-steer and face a specific angle 
@@ -179,10 +184,26 @@ int main() {
 
             // Reset variables
             num_sweeps = 0;
+            chosen_angle = 0;
+            chosen_distance = 0;
+            
+            // Reset the buffers too
+            for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
+                accum[i] = 0;
+                lidar_buffer[i] = 0;
+            }
             
         }
 
     }
+
+    // OK so we know where to go, now we have to calculate how far to travel and also verify with the IMU
+    float drive_time = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, chosen_distance);
+
+    // Now drive
+    drive.drive_forward();
+    sleep_ms(drive_time);
+    drive.brake();
 
     return 0;
 }

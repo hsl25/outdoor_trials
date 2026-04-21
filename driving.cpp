@@ -31,8 +31,8 @@
 #include "driving.hpp"
 
 Drive::Drive() {
-    new_motor_level = TOP * calc_pwm(OLD_WHEEL_DIAMETER, NEW_WHEEL_DIAMETER);
-    new_motor_pwm = calc_pwm(OLD_WHEEL_DIAMETER, NEW_WHEEL_DIAMETER);
+    new_motor_level = TOP * calc_pwm(WHEEL_DIAMETER, WHEEL_DIAMETER);
+    new_motor_pwm = calc_pwm(WHEEL_DIAMETER, WHEEL_DIAMETER);
 }
 
 // ---------------- PWM CONFIGURATION ----------------
@@ -104,15 +104,20 @@ float Drive::calc_pwm(float old_wheel_diameter, float new_wheel_diameter) {
     return (new_motor_rpm / OLD_MOTOR_RPM) * NORMAL_DUTY_CYCLE;
 }
 
+float Drive::calc_drive_time(float diameter, float RPM, float distance) {
+    float speed = PI * diameter * RPM;
+    return distance / speed;
+}
+
 // ---------------- MOTOR SETUP ----------------
 
 void Drive::setup_motors() {
 
     // Initialise PWM outputs
-    init_pwm(MOTOR1_PWM_PIN, calc_pwm(OLD_WHEEL_DIAMETER, NEW_WHEEL_DIAMETER));
+    init_pwm(MOTOR1_PWM_PIN, calc_pwm(WHEEL_DIAMETER, WHEEL_DIAMETER));
     init_pwm(MOTOR2_PWM_PIN, NORMAL_DUTY_CYCLE);
     init_pwm(MOTOR3_PWM_PIN, NORMAL_DUTY_CYCLE);
-    init_pwm(MOTOR4_PWM_PIN, calc_pwm(OLD_WHEEL_DIAMETER, NEW_WHEEL_DIAMETER));
+    init_pwm(MOTOR4_PWM_PIN, calc_pwm(WHEEL_DIAMETER, WHEEL_DIAMETER));
     init_pwm(MOTOR5_PWM_PIN, NORMAL_DUTY_CYCLE);
     init_pwm(MOTOR6_PWM_PIN, NORMAL_DUTY_CYCLE);
 

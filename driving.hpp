@@ -44,8 +44,7 @@
 // ==================== Other defines ====================
 #define PI 3.141592
 #define OLD_MOTOR_RPM 56 // This is the RPM of the old motors at 50% duty cycle 
-#define OLD_WHEEL_DIAMETER 0.107 // 107mm diameter wheels on the old motors
-#define NEW_WHEEL_DIAMETER 0.140 // 140mm diameter wheels on the new motors
+#define WHEEL_DIAMETER 0.107 // 107mm diameter wheels on the old motors
 
 class Drive {
     private:
@@ -63,6 +62,7 @@ class Drive {
         void reverse();
         float calc_speed_ratio(float turn_radius, float track_width);
         float calc_pwm(float old_wheel_diameter, float new_wheel_diameter);
+        float calc_drive_time(float diameter, float RPM, float distance);
         void turn_left(float speed_ratio);
         void turn_right(float speed_ratio);
         void skid_left();
