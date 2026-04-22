@@ -47,17 +47,6 @@ int main() {
     // This involves checking for errors and setting up timing budget
     tof.calibration();
 
-    // Start continuous ranging
-    // This function still needs to be modified for adding data into a buffer and calibrating
-    // This is how calibration will run:
-    // 1. The servo will start at position 0 degrees
-    // 2. The servo will increment 1 degree. It will then indicate via one of something like: toggling a bit, raising a flag, etc. 
-    // 3. The LiDAR will then check if data is available, and if it is available, it will add it to the correct buffer position
-    // 4. After data has been successfully added, the servo will increment the angle again and the process will start again
-
-    // THIS STILL NEEDS WORK - I HAVE AN ERROR WITH THIS.
-    // lidar_buffer = nav.initial_sweep(CALIBRATION_SWEEPS);
-
     // Keep track of the number of sweeps the servo has done
     int num_sweeps = 0;
     int temp = 360 / SKID_CHECK_ANGLE;
@@ -67,55 +56,8 @@ int main() {
     int chosen_angle = 0;
 
     for (int i = 0; i < temp; i++) {
-        // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
-        while (num_sweeps < CALIBRATION_SWEEPS) {
-            for (int i = 0; i <= MAX_SERVO_ANGLE; i++) {
-                // Now increment the angle of the servo by 1 degree
-                servo.set_angle(i);
-
-                // Wait for servo to physically reach the degree
-                sleep_ms(15); 
-
-                // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
-                // Then, the data point is added to the buffer
-                // This is step 3
-                uint16_t lidar_data = tof.read_tof_continuous();
-                // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
-                // I define 1 sweep as 0 -> 180 and 180 -> 0
-                // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
-                accum[i] += lidar_data;
-                // lidar_buffer[i] += (uint16_t) temp;
-                // // Instead of making a function to add a sample, do it normally for any buffer
-                // buffer.add_calib_sample(temp, i); 
-    
-            }
-
-            for (int i = MAX_SERVO_ANGLE; i >= 0; i--) {
-                // Now increment the angle of the servo by 1 degree
-                servo.set_angle(i);
-
-                // Wait for servo to physically reach the degree
-                sleep_ms(15); 
-
-                // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
-                // Then, the data point is added to the buffer
-                // This is step 3
-                uint16_t lidar_data = tof.read_tof_continuous();
-                // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-                accum[i] += lidar_data;
-                // lidar_buffer[i] += (uint16_t) temp;
-                // // Instead of making a function to add a sample, do it normally for any buffer 
-                // buffer.add_calib_sample(temp, i);  
-
-            }
-            
-            num_sweeps++;
-
-        }
-
-        for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
-            lidar_buffer[i] = accum[i] / (2 * CALIBRATION_SWEEPS);
-        }
+        // Scan the surroundings and measure distances
+        nav.initial_sweep(CALIBRATION_SWEEPS, lidar_buffer, MAX_SERVO_ANGLE + 1);
 
         // Identify all the angles at which peaks occur in the buffer
         std::vector<int> peak_angles = nav.calc_peaks(lidar_buffer, MAX_SERVO_ANGLE + 1);
@@ -186,6 +128,9 @@ int main() {
             num_sweeps = 0;
             chosen_angle = 0;
             chosen_distance = 0;
+
+            // Reset buffer
+            nav.reset_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
             
             // Reset the buffers too
             for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {

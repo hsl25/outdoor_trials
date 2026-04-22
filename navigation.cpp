@@ -17,24 +17,25 @@ Navigation::Navigation() {
     
 }
 
-std::vector<uint16_t> Navigation::initial_sweep(int num_sweeps) {
-    // Start continuous ranging
-    // This function still needs to be modified for adding data into a buffer and calibrating
-    // This is how calibration will run:
-    // 1. The servo will start at position 0 degrees
-    // 2. The servo will increment 1 degree. It will then indicate via one of something like: toggling a bit, raising a flag, etc. 
-    // 3. The LiDAR will then check if data is available, and if it is available, it will add it to the correct buffer position
-    // 4. After data has been successfully added, the servo will increment the angle again and the process will start again
+// Start continuous ranging
+// This function still needs to be modified for adding data into a buffer and calibrating
+// This is how calibration will run:
+// 1. The servo will start at position 0 degrees
+// 2. The servo will increment 1 degree. It will then indicate via one of something like: toggling a bit, raising a flag, etc. 
+// 3. The LiDAR will then check if data is available, and if it is available, it will add it to the correct buffer position
+// 4. After data has been successfully added, the servo will increment the angle again and the process will start again
 
+// This function takes as input the lidar buffer and its size, and also the number of times we will sweep back and forth
+// It simply performs the sweeping and loads data into the buffer
+void Navigation::initial_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     // Keep track of the number of sweeps the servo has done
     int num = 0;
 
-    uint32_t accum[MAX_SERVO_ANGLE + 1];
-    std::vector<uint16_t> tof_buf;
+    uint32_t accum[size] = {0};
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
     while (num < num_sweeps) {
-        for (int i = 0; i <= MAX_SERVO_ANGLE; i++) {
+        for (int i = 0; i <= size; i++) {
             // Now increment the angle of the servo by 1 degree
             sv.set_angle(i);
 
@@ -55,7 +56,7 @@ std::vector<uint16_t> Navigation::initial_sweep(int num_sweeps) {
   
         }
 
-        for (int i = MAX_SERVO_ANGLE; i >= 0; i--) {
+        for (int i = size; i >= 0; i--) {
             // Now increment the angle of the servo by 1 degree
             sv.set_angle(i);
 
@@ -78,14 +79,12 @@ std::vector<uint16_t> Navigation::initial_sweep(int num_sweeps) {
 
     }
 
-    for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
-        tof_buf.push_back(accum[i] / (2 * num_sweeps));
+    for (int i = 0; i < size; i++) {
+        lidar_buf[i] = (accum[i] / (2 * num_sweeps));
     }
 
     // For debugging
     printf("Rover calibration complete.\n");
-
-    return tof_buf;
 
 }
 
@@ -339,6 +338,12 @@ void Navigation::skid_into_position(int start_yaw, int final_yaw) {
             // More to be done here later
             dr.drive_forward();
         }
+}
+
+void Navigation::reset_buffer(uint16_t lidar_buff[], int size) {
+    for (int i = 0; i < size; i++) {
+        lidar_buff[i] = 0;
+    }
 }
 
 
