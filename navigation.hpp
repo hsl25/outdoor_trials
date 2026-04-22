@@ -16,6 +16,7 @@
 #define SAFETY_MARGIN 10 // 10mm safety margin added to the width and length of the rover
 #define ALPHA 0.2 // Safety constant
 #define SKID_CHECK_ANGLE 90
+#define DISTANCE_DIVIDER 2
 
 class Navigation {
     public:

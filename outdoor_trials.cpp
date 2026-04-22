@@ -55,7 +55,8 @@ int main() {
     float chosen_distance = 0.0f;
     int chosen_angle = 0;
 
-    for (int i = 0; i < temp; i++) {
+    while (1) {
+        for (int i = 0; i < temp; i++) {
         // Scan the surroundings and measure distances
         nav.initial_sweep(CALIBRATION_SWEEPS, lidar_buffer, MAX_SERVO_ANGLE + 1);
 
@@ -117,39 +118,48 @@ int main() {
             // Ok now we are in position so we can break and start navigating
             break;
 
-        } else if (chosen_distance <= ROVER_WIDTH + SAFETY_MARGIN) {
-            // Ok so there is no gap in front of us that is large enough
-            // Now we need to skid-steer by 90 degrees and start the entire process again, all the way from scanning and relative localisation
-            imu.update(); 
-            float current_yaw = imu.read().yaw_deg;
-            nav.skid_into_position(current_yaw, current_yaw + SKID_CHECK_ANGLE);
+            } else if (chosen_distance <= ROVER_WIDTH + SAFETY_MARGIN) {
+                // Ok so there is no gap in front of us that is large enough
+                // Now we need to skid-steer by 90 degrees and start the entire process again, all the way from scanning and relative localisation
+                imu.update(); 
+                float current_yaw = imu.read().yaw_deg;
+                nav.skid_into_position(current_yaw, current_yaw + SKID_CHECK_ANGLE);
 
-            // Reset variables
-            num_sweeps = 0;
-            chosen_angle = 0;
-            chosen_distance = 0;
+                // Reset variables
+                num_sweeps = 0;
+                chosen_angle = 0;
+                chosen_distance = 0;
 
-            // Reset buffer
-            nav.reset_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
-            
-            // Reset the buffers too
-            for (int i = 0; i < MAX_SERVO_ANGLE + 1; i++) {
-                accum[i] = 0;
-                lidar_buffer[i] = 0;
+                // Reset buffer
+                nav.reset_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
+                
             }
-            
+
         }
+
+        // OK so we know where to go, now we have to calculate how far to travel and also verify with the IMU
+        float drive_time = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, chosen_distance / DISTANCE_DIVIDER);
+
+        // Now drive
+        drive.drive_forward();
+        sleep_ms(drive_time);
+        drive.brake();
+
+        // Ok, now we have finished navigating. 
+        // Now we simply scan again and navigate again, and this cycle continues till the rover is turned off via the GUI
+        // We still need to reset everything though
+
+        // Reset variables
+        num_sweeps = 0;
+        chosen_angle = 0;
+        chosen_distance = 0;
+
+        // Reset buffer
+        nav.reset_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
 
     }
 
-    // OK so we know where to go, now we have to calculate how far to travel and also verify with the IMU
-    float drive_time = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, chosen_distance);
-
-    // Now drive
-    drive.drive_forward();
-    sleep_ms(drive_time);
-    drive.brake();
-
+    
     return 0;
 }
 
