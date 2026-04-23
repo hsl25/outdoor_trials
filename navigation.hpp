@@ -10,6 +10,7 @@
 #include "IMU.hpp"
 
 #define DEG_TO_RAD 0.01745329251 // One radian
+#define RAD_TO_DEG 57.2957795131
 #define PEAK_CHECKS 3 // Number of times we check whether the data is increasing consecutively 
 #define ROVER_WIDTH 600 // Width of the rover in mm
 #define ROVER_LENGTH 440 // Length of rover in mm
@@ -27,7 +28,7 @@ class Navigation {
         int calc_min_sweep_angle(float dist);
         std::vector<float> calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size);
         int choose_direction(std::vector<float> gaps);
-        void skid_into_position(int start_yaw, int final_yaw);
+        void skid_into_position(float start_yaw, float final_yaw);
         void reset_buffer(uint16_t lidar_buff[], int size);
     private:
 };

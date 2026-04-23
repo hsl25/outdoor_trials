@@ -18,7 +18,7 @@
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17
 #define UART_ID uart0
-#define UART_BAUD_RATE 115200
+#define UART_BAUD_RATE 115200 
 
 // Constructor
 TOF::TOF() {
@@ -71,7 +71,7 @@ void TOF::calibration() {
 
     if (VL53L0X_PerformRefCalibration(pDev, &VhvSettings, &PhaseCal) != VL53L0X_ERROR_NONE) {
         printf("RefCalibration failed\n");
-        while (1);
+        // while (1);
     }
 
     uint32_t refSpadCount;
@@ -79,10 +79,10 @@ void TOF::calibration() {
 
     if (VL53L0X_PerformRefSpadManagement(pDev, &refSpadCount, &isApertureSpads) != VL53L0X_ERROR_NONE) {
         printf("SPAD management failed\n");
-        while (1);
+        // while (1);
     }
 
-    VL53L0X_SetMeasurementTimingBudgetMicroSeconds(pDev, ranging_timing_budget);
+    VL53L0X_SetMeasurementTimingBudgetMicroSeconds(pDev, 33000);
 
 }
 

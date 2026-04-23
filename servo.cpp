@@ -23,20 +23,22 @@ Servo::Servo() {
 }
 
 void Servo::init_pwm(uint32_t pin, float duty) {
-
     gpio_set_function(pin, GPIO_FUNC_PWM);
 
     uint slice = pwm_gpio_to_slice_num(pin);
     uint ch = pwm_gpio_to_channel(pin);
 
-    pwm_set_wrap(slice, PWM_TOP);
+    pwm_config config = pwm_get_default_config();
+
+    pwm_config_set_clkdiv(&config, 125.0f);     // slow down clock
+    pwm_config_set_wrap(&config, 20000);        // 20ms period
+
+    pwm_init(slice, &config, true);
 
     if (duty > 1.0f) duty = 1.0f;
     if (duty < 0.0f) duty = 0.0f;
 
-    pwm_set_chan_level(slice, ch, duty * PWM_TOP);
-
-    pwm_set_enabled(slice, true);
+    pwm_set_chan_level(slice, ch, duty * 20000);
 }
 
 void Servo::init_servo() {
@@ -55,44 +57,13 @@ void Servo::set_angle(int angle) {
     }
 
     float pulse_width = 1.0 + (angle / 180.0) * 1.0; // Linear interpolation between 1.0ms and 2.0ms
-    float duty_cycle = pulse_width / PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
+    float duty_cycle = pulse_width / 20.0f; // Convert pulse width to duty cycle (assuming a 20ms period)
 
     // Set the PWM duty cycle to control the servo angle
     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
     init_pwm(PWM_PIN, duty_cycle);
 
 }
-
-// // I don't think I will use these functions. I am fixing my set_angle() function
-// void Servo::set_zero() {
-
-//     float duty_cycle = ZERO_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
-
-//     // Set the PWM duty cycle to control the servo angle
-//     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
-//     init_pwm(PWM_PIN, duty_cycle);
-    
-// }
-
-// void Servo::set_ninety() {
-
-//     float duty_cycle = NINETY_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
-
-//     // Set the PWM duty cycle to control the servo angle
-//     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
-//     init_pwm(PWM_PIN, duty_cycle);
-    
-// }
-
-// void Servo::set_one_eighty() {
-
-//     float duty_cycle = ONE_EIGHTY_PULSE/ PWM_PERIOD; // Convert pulse width to duty cycle (assuming a 20ms period)
-
-//     // Set the PWM duty cycle to control the servo angle
-//     // This should set the angle of the servo to the one we chose based on the duty cycle we calculated
-//     init_pwm(PWM_PIN, duty_cycle);
-    
-// }
 
 // This function sweeps the servo from 0 degrees to 180 degrees and then back to 0 degrees
 void Servo::single_sweep() {

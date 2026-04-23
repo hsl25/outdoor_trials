@@ -9,7 +9,7 @@
 
 TOF my_tof;
 Servo sv;
-IMU my_imu;
+IMU my_imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
 Drive dr;
 
 // Constructor
@@ -31,11 +31,11 @@ void Navigation::initial_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     // Keep track of the number of sweeps the servo has done
     int num = 0;
 
-    uint32_t accum[size] = {0};
+    std::vector<uint32_t> accum(size, 0);
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
     while (num < num_sweeps) {
-        for (int i = 0; i <= size; i++) {
+        for (int i = 0; i < size; i++) {
             // Now increment the angle of the servo by 1 degree
             sv.set_angle(i);
 
@@ -56,7 +56,7 @@ void Navigation::initial_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
   
         }
 
-        for (int i = size; i >= 0; i--) {
+        for (int i = size - 1; i >= 0; i--) {
             // Now increment the angle of the servo by 1 degree
             sv.set_angle(i);
 
@@ -88,12 +88,12 @@ void Navigation::initial_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
 
 }
 
-float Navigation:: calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2) {
+float Navigation::calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2) {
     int theta_diff = angle2 - angle1;
     float x1 = (float) length1;
     float x2 = (float) length2;
 
-    return sqrt((x1 * x1) + (x2 * x2) - (2 * x1 * x2 * cos(theta_diff * DEG_TO_RAD)));
+    return sqrtf((x1 * x1) + (x2 * x2) - (2 * x1 * x2 * cosf(theta_diff * DEG_TO_RAD)));
 }
 
 std::vector<int> Navigation::calc_peaks(uint16_t arr[], int size) {
@@ -113,8 +113,8 @@ std::vector<int> Navigation::calc_peaks(uint16_t arr[], int size) {
 }
 
 int Navigation::calc_min_sweep_angle(float dist) {
-    float temp_angle = 2 * atan((ROVER_WIDTH + SAFETY_MARGIN) / (2 * dist)); 
-    temp_angle *= DEG_TO_RAD;
+    float temp_angle = 2 * atan((ROVER_WIDTH + SAFETY_MARGIN) / (2 * dist)); // Returns an angle in radians
+    temp_angle *= RAD_TO_DEG;
 
     // Now I need to round up - always round up because if the minimum angle is 30.2 degrees, it is safer to have a larger angle 
     // I can do this by adding 1 and then casting to an int, so the decimal places will be 'chopped off' 
@@ -133,7 +133,7 @@ int Navigation::calc_min_sweep_angle(float dist) {
 // - the vector of peak angles 
 // - the vector of minimum sweep angles 
 // - the entire LiDAR buffer and its size 
-std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size) {
+std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std::vector<int> min_sweep_angles, uint16_t buf[], int size)  {
     // Define a vector for the gap widths
     std::vector<float> gap_widths;
     
@@ -169,11 +169,6 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
                         break;
                     }
 
-                    // Upper clamp
-                    if ((k + i) > size) {
-                        break;
-                    }
-
                     if (buf[k - i] < dist_thresholds[j]) {
                         lt_count++;
                     } else {
@@ -189,8 +184,14 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
                     // Record the distance measurement at which we cross over, and the angle at which this occurs
                     // Then break out of the for loop
                     // Bear in mind, I need the last good point, not the first bad point. This is why I use j + 1
-                    end_distance1 = buf[k + 1];
-                    end_angle1 = k + 1;
+                    if (k == size - 1) {
+                        end_distance1 = buf[k];
+                        end_angle1 = k;
+                    } else {
+                        end_distance1 = buf[k + 1];
+                        end_angle1 = k + 1;
+                    }
+                    
                     // Now we need to break out of the outer for loop, since the edge has been detected
                     break;
                 }
@@ -262,7 +263,7 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
 int Navigation::choose_direction(std::vector<float> gaps) {
     // Now find the largest gap width
     float largest_gw = 0;
-    int index;
+    int index = -1;
 
     for (int i = 0; i < gaps.size(); i++) {
         if (gaps[i] > largest_gw) {
@@ -277,9 +278,9 @@ int Navigation::choose_direction(std::vector<float> gaps) {
 
 // This function should simply skid-steer into place until the angle desired is equal to the change in yaw from the initial yaw 
 // The arguments are the initial yaw (found by updating the IMU and measuring the yaw) and the final yaw (found by calculation based on the angle you desire)
-void Navigation::skid_into_position(int start_yaw, int final_yaw) {
+void Navigation::skid_into_position(float start_yaw, float final_yaw) {
     float delta = 0.0f;
-    int steer_angle = final_yaw - start_yaw;
+    int steer_angle = (int) (final_yaw - start_yaw);
 
     if (steer_angle > 0) {
             // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
@@ -344,6 +345,6 @@ void Navigation::reset_buffer(uint16_t lidar_buff[], int size) {
     for (int i = 0; i < size; i++) {
         lidar_buff[i] = 0;
     }
-}
+} 
 
 
