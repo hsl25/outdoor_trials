@@ -5,7 +5,8 @@
 #include <hardware/pwm.h>
 
 // PWM defines
-#define PWM_PIN 18 // GP18 used for PWM control of the front servo motor
+#define SERVO1_PWM_PIN 18 // GP18 used for PWM control of the front servo motor
+#define SERVO2_PWM_PIN 19 // GP18 used for PWM control of the front servo motor
 #define PWM_DIVIDER 64.0f // The servo needs to receive a 50Hz signal, so we need to adjust the divider and TOP value. Remember, the clk frequency on the RP2040 is around 125MHz
 #define PWM_TOP 39062 // Will adjust this later but I just copied this from driving.hpp for now
 #define SERVO_DUTY_CYCLE 0.5 // Will be tuned later
@@ -25,12 +26,10 @@ class Servo {
         Servo();
         void init_pwm(uint32_t pin, float duty);
         void init_servo();
-        void set_angle(int angle); 
-        // Not needed for the time being
-        // void set_zero();
-        // void set_ninety();
-        // void set_one_eighty();
-        void single_sweep();
+        void set_front_angle(int angle); 
+        void set_rear_angle(int angle); 
+        void single_front_sweep();
+        void single_rear_sweep();
     private:
         int default_angle; // This is the angle for a single position of the servo 
         int sweep_angle; // This is the angle that will be adjusted whent he servo is sweeping back and forth

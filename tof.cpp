@@ -2,16 +2,21 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "pico/time.h"
-
+#include "hardware/uart.h"
 #include "vl53l0x_api.h"
 
 #include "tof.hpp"
 #include "buffer.hpp"
 
-// I2C defines 
-#define I2C_PORT i2c0
-#define SDA_PIN 12
-#define SCL_PIN 13
+// Front LiDAR I2C defines 
+#define I2C_FRONT_PORT i2c1
+#define FRONT_SDA_PIN 14
+#define FRONT_SCL_PIN 15
+
+// Rear LiDAR I2C defines 
+#define I2C_REAR_PORT i2c0
+#define REAR_SDA_PIN 16
+#define REAR_SCL_PIN 17
 #define I2C_BAUDRATE 100000
 
 // TX/RX defines
@@ -28,12 +33,18 @@ TOF::TOF() {
 
 void TOF::init_i2c() {
     // ---------------- I2C INIT ----------------
-    i2c_init(I2C_PORT, I2C_BAUDRATE);
+    i2c_init(I2C_FRONT_PORT, I2C_BAUDRATE);
+    i2c_init(I2C_REAR_PORT, I2C_BAUDRATE);
 
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
+    gpio_set_function(FRONT_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(FRONT_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(FRONT_SDA_PIN);
+    gpio_pull_up(FRONT_SCL_PIN);
+
+    gpio_set_function(REAR_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(REAR_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(REAR_SDA_PIN);
+    gpio_pull_up(REAR_SCL_PIN);
 }
 
 void TOF::init_uart() {
@@ -105,8 +116,12 @@ uint16_t TOF::read_tof_continuous() {
     uint8_t ready = 0;
 
     // Wait for measurement ready
+    absolute_time_t start = get_absolute_time();
     while (!ready) {
         VL53L0X_GetMeasurementDataReady(pDev, &ready);
+        if (absolute_time_diff_us(start, get_absolute_time()) > 100000) {
+            return 0xFFFF;
+        }
         sleep_ms(5);
     }
 

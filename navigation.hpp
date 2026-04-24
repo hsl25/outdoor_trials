@@ -22,7 +22,9 @@
 class Navigation {
     public:
         Navigation();
-        void initial_sweep(int num_sweeps, uint16_t lidar_buf[], int size);
+        void forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size);
+        void rear_sweep(int num_sweeps, uint16_t lidar_buf[], int size);
+        void print_buffer(uint16_t buf[], int size);
         float calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2);
         std::vector<int> calc_peaks(uint16_t arr[], int size);
         int calc_min_sweep_angle(float dist);
