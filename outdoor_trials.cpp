@@ -27,53 +27,44 @@ int main() {
     // Initialise serial monitor just in case I need it for debugging 
     stdio_init_all();
 
-    // Initialise I2C and UART
-    tof.init_i2c();
-    tof.init_uart();
+    servo.init_front_servo();
+    
+    // while (1) {
+    //     // servo.single_front_sweep();
+    //     // servo.single_rear_sweep();
+    //     servo.single_front_sweep();
+    //     servo.single_rear_sweep();
+    // }
 
-    // Setting up the VL53L0X LiDAR and checking for errors
+    // Initialise I2C and UART
+    tof.init_front_i2c();
+    // tof.init_uart();
+
+    // // Setting up the VL53L0X LiDAR and checking for errors
     tof.device_setup();
 
-    // Initialise IMU
-    imu.init();
+    // // // Initialise IMU
+    // // imu.init();
 
-    // Initialise motors
-    drive.init_pwm_mode();
-    drive.init_clk_divider();
-    drive.setup_motors();
+    // // Initialise motors
+    // drive.init_pwm_mode();
+    // drive.init_clk_divider();
+    // drive.setup_motors();
 
     // TOF calibration
     // This involves checking for errors and setting up timing budget
     tof.calibration();
 
-    while (1) {
-        printf("1 \n");
-    }
-
     // Keep track of the number of sweeps the servo has done
     int num_sweeps = 0;
     int temp = 360 / SKID_CHECK_ANGLE;
 
-    // Establish variables
-    float chosen_distance = 0.0f;
-    int chosen_angle = 0;
-    int run = 0;
+    // // // Establish variables
+    // float chosen_distance = 0.0f;
+    // int chosen_angle = 0;
+    // int run = 0;
 
-    // Servo testing
-    while (1) {
-        sleep_ms(1000);
-        servo.set_front_angle(0);
-        sleep_ms(1000);
-        servo.set_front_angle(90);
-        sleep_ms(1000);
-        servo.set_front_angle(180);
-        sleep_ms(1000);
-        servo.set_front_angle(90);
-        sleep_ms(1000);
-        servo.set_front_angle(0);
-        sleep_ms(1000);
-        printf("yes\n");
-    }
+    tof.start_continuous_ranging();
 
     // Testing the lidar scanning
     // Scan the surroundings and measure distances

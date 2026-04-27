@@ -31,18 +31,21 @@ void Servo::init_pwm(uint32_t pin, float duty) {
     pwm_config config = pwm_get_default_config();
 
     pwm_config_set_clkdiv(&config, 125.0f);     // slow down clock
-    pwm_config_set_wrap(&config, 20000);        // 20ms period
+    pwm_config_set_wrap(&config, 19999);        // 20ms period
 
     pwm_init(slice, &config, true);
 
     if (duty > 1.0f) duty = 1.0f;
     if (duty < 0.0f) duty = 0.0f;
 
-    pwm_set_chan_level(slice, ch, duty * 20000);
+    pwm_set_chan_level(slice, ch, duty * 19999);
 }
 
-void Servo::init_servo() {
+void Servo::init_front_servo() {
     init_pwm(SERVO1_PWM_PIN, SERVO_DUTY_CYCLE);
+}
+
+void Servo::init_rear_servo() {
     init_pwm(SERVO2_PWM_PIN, SERVO_DUTY_CYCLE);
 }
 
@@ -53,28 +56,32 @@ void Servo::set_front_angle(int angle) {
     if (angle < 0) angle = 0;
     else if (angle > 180) angle = 180;
 
-    float pulse_ms = 1.0f + (angle / 180.0f); // range: 1.0 to 2.0
-    float duty_cycle = pulse_ms / 20.0f;
+    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / 180.0f) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
 
     uint slice1 = pwm_gpio_to_slice_num(SERVO1_PWM_PIN);
     uint ch1 = pwm_gpio_to_channel(SERVO1_PWM_PIN);
 
-    // Just update the level, don't re-init
-    pwm_set_chan_level(slice1, ch1, (uint16_t)(duty_cycle * 20000));
+    // 1 tick = 1us because clkdiv=125 and clock=125MHz
+    uint16_t level = (uint16_t)(pulse_ms * 1000.0f); // ms -> us
+
+    pwm_set_chan_level(slice1, ch1, level);
 }
 
 void Servo::set_rear_angle(int angle) {
     if (angle < 0) angle = 0;
     else if (angle > 180) angle = 180;
 
-    float pulse_ms = 1.0f + (angle / 180.0f); // range: 1.0 to 2.0
+    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / 180.0f) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
     float duty_cycle = pulse_ms / 20.0f;
 
     uint slice2 = pwm_gpio_to_slice_num(SERVO2_PWM_PIN);
     uint ch2 = pwm_gpio_to_channel(SERVO2_PWM_PIN);
 
+    // 1 tick = 1us because clkdiv=125 and clock=125MHz
+    uint16_t level = (uint16_t)(pulse_ms * 1000.0f); // ms -> us
+
     // Just update the level, don't re-init
-    pwm_set_chan_level(slice2, ch2, (uint16_t)(duty_cycle * 20000));
+    pwm_set_chan_level(slice2, ch2, level);
 }
 
 // This function sweeps the servo from 0 degrees to 180 degrees and then back to 0 degrees
@@ -99,7 +106,7 @@ void Servo::single_front_sweep() {
 
 void Servo::single_rear_sweep() {
     // Set the angle initially to 0 degrees
-    set_rear_angle(0);
+    // set_rear_angle(0);
 
     // Sweep from 0 degrees to 180 degrees
     for (int angle = 0; angle < 180; angle++) {

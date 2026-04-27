@@ -7,6 +7,7 @@
 
 #include "tof.hpp"
 #include "buffer.hpp"
+#include "driving.hpp"
 
 // Front LiDAR I2C defines 
 #define I2C_FRONT_PORT i2c1
@@ -17,6 +18,7 @@
 #define I2C_REAR_PORT i2c0
 #define REAR_SDA_PIN 16
 #define REAR_SCL_PIN 17
+
 #define I2C_BAUDRATE 100000
 
 // TX/RX defines
@@ -25,21 +27,27 @@
 #define UART_ID uart0
 #define UART_BAUD_RATE 115200 
 
+Drive dro;
+
 // Constructor
 TOF::TOF() {
     pDev = &dev;
     pDev->I2cDevAddr = 0x29;
 }
 
-void TOF::init_i2c() {
+void TOF::init_front_i2c() {
     // ---------------- I2C INIT ----------------
     i2c_init(I2C_FRONT_PORT, I2C_BAUDRATE);
-    i2c_init(I2C_REAR_PORT, I2C_BAUDRATE);
 
     gpio_set_function(FRONT_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(FRONT_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(FRONT_SDA_PIN);
     gpio_pull_up(FRONT_SCL_PIN);
+}
+
+void TOF::init_rear_i2c() {
+    // ---------------- I2C INIT ----------------
+    i2c_init(I2C_REAR_PORT, I2C_BAUDRATE);
 
     gpio_set_function(REAR_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(REAR_SCL_PIN, GPIO_FUNC_I2C);
@@ -66,12 +74,12 @@ void TOF::device_setup() {
 
     if (VL53L0X_DataInit(pDev) != VL53L0X_ERROR_NONE) {
         printf("DataInit failed\n");
-        while (1);
+        // while (1);
     }
 
     if (VL53L0X_StaticInit(pDev) != VL53L0X_ERROR_NONE) {
         printf("StaticInit failed\n");
-        while (1);
+        // while (1);
     }
 }
 
@@ -102,7 +110,7 @@ void TOF::start_continuous_ranging() {
 
     if (VL53L0X_StartMeasurement(pDev) != VL53L0X_ERROR_NONE) {
         printf("StartMeasurement failed\n");
-        while (1);
+        // while (1);
     }
 
 }
@@ -140,7 +148,7 @@ uint16_t TOF::read_tof_continuous() {
     }
 
     // If there is an error, return a large value (e.g., 0xFFFF) to indicate an error.
-    return 0xFFFF;
+    return MAX_RANGE;
 
 }
 
