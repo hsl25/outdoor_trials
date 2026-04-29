@@ -9,30 +9,18 @@
 #include "buffer.hpp"
 #include "driving.hpp"
 
-// Front LiDAR I2C defines 
-#define I2C_FRONT_PORT i2c1
-#define FRONT_SDA_PIN 14
-#define FRONT_SCL_PIN 15
-
-// Rear LiDAR I2C defines 
-#define I2C_REAR_PORT i2c0
-#define REAR_SDA_PIN 16
-#define REAR_SCL_PIN 17
-
-#define I2C_BAUDRATE 100000
-
-// TX/RX defines
-#define UART_TX_PIN 16
-#define UART_RX_PIN 17
-#define UART_ID uart0
-#define UART_BAUD_RATE 115200 
-
-Drive dro;
-
 // Constructor
 TOF::TOF() {
-    pDev = &dev;
-    pDev->I2cDevAddr = 0x29;
+    // Front sensor on i2c1
+    front_dev.I2cDevAddr = 0x29;
+    front_dev.i2c_port = I2C_FRONT_PORT;
+
+    // Rear sensor on i2c0
+    rear_dev.I2cDevAddr  = 0x29;
+    rear_dev.i2c_port = I2C_REAR_PORT;
+
+    // Default active sensor to front
+    pDev = (VL53L0X_DEV)&front_dev;
 }
 
 void TOF::init_front_i2c() {
@@ -68,19 +56,25 @@ void TOF::device_setup() {
     // Remove these local variables when converting from the main to the class structure
     // These variables are now class members, not local
     // VL53L0X_Dev_t dev;
-    // VL53L0X_DEV pDev = &dev;
+    // VL53L0X_DEV pDev = &dev; 
 
-    // pDev->I2cDevAddr = 0x29;
+    pDev->I2cDevAddr = 0x29;
 
     if (VL53L0X_DataInit(pDev) != VL53L0X_ERROR_NONE) {
         printf("DataInit failed\n");
         // while (1);
     }
 
+    printf("Scan 1 done\n");
+
+
     if (VL53L0X_StaticInit(pDev) != VL53L0X_ERROR_NONE) {
         printf("StaticInit failed\n");
         // while (1);
     }
+
+    printf("Scan 2 done\n");
+
 }
 
 void TOF::calibration() {
@@ -101,7 +95,7 @@ void TOF::calibration() {
         // while (1);
     }
 
-    VL53L0X_SetMeasurementTimingBudgetMicroSeconds(pDev, 33000);
+    VL53L0X_SetMeasurementTimingBudgetMicroSeconds(pDev, 20000);
 
 }
 
@@ -127,10 +121,10 @@ uint16_t TOF::read_tof_continuous() {
     absolute_time_t start = get_absolute_time();
     while (!ready) {
         VL53L0X_GetMeasurementDataReady(pDev, &ready);
-        if (absolute_time_diff_us(start, get_absolute_time()) > 100000) {
+        if (absolute_time_diff_us(start, get_absolute_time()) > 1000000) {
             return 0xFFFF;
         }
-        sleep_ms(5);
+        sleep_us(200);
     }
 
     if (VL53L0X_GetRangingMeasurementData(pDev, &data) == VL53L0X_ERROR_NONE) {

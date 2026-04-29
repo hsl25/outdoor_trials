@@ -4,7 +4,18 @@
 #include "hardware/i2c.h"
 #include "pico/stdlib.h"
 
-#define VL53L0X_I2C_PORT i2c0
+// Mirror of the extended struct from tof.hpp
+// Must match exactly — base must be first member
+typedef struct {
+    VL53L0X_Dev_t base;
+    i2c_inst_t *i2c_port;
+} TOF_Dev_t;
+
+// Recover the i2c port from whichever dev is passed in
+static inline i2c_inst_t *get_i2c(VL53L0X_DEV Dev) {
+    TOF_Dev_t *tdev = (TOF_Dev_t *)Dev;
+    return tdev->i2c_port;
+}
 
 VL53L0X_Error VL53L0X_WriteMulti(
     VL53L0X_DEV Dev,
@@ -20,7 +31,7 @@ VL53L0X_Error VL53L0X_WriteMulti(
     }
 
     int ret = i2c_write_blocking(
-        VL53L0X_I2C_PORT,
+        get_i2c(Dev),
         Dev->I2cDevAddr,
         buffer,
         count + 1,
@@ -37,7 +48,7 @@ VL53L0X_Error VL53L0X_ReadMulti(
     uint32_t count
 ) {
     int ret = i2c_write_blocking(
-        VL53L0X_I2C_PORT,
+        get_i2c(Dev),
         Dev->I2cDevAddr,
         &index,
         1,
@@ -48,7 +59,7 @@ VL53L0X_Error VL53L0X_ReadMulti(
         return VL53L0X_ERROR_CONTROL_INTERFACE;
 
     ret = i2c_read_blocking(
-        VL53L0X_I2C_PORT,
+        get_i2c(Dev),
         Dev->I2cDevAddr,
         pdata,
         count,

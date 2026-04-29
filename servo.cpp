@@ -53,10 +53,15 @@ void Servo::init_rear_servo() {
 // The angle set is determined via PWM duty cycle
 // The angle range is 0 to 180 degrees
 void Servo::set_front_angle(int angle) {
-    if (angle < 0) angle = 0;
-    else if (angle > 180) angle = 180;
-
-    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / 180.0f) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
+    if (angle < SERVO_MIN_SWEEP_ANGLE) {
+        angle = SERVO_MIN_SWEEP_ANGLE;
+    } 
+    else if (angle > SERVO_MAX_SWEEP_ANGLE) {
+        angle = SERVO_MAX_SWEEP_ANGLE;
+    }
+    
+    float max_angle = (float) (SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE);
+    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / max_angle) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
 
     uint slice1 = pwm_gpio_to_slice_num(SERVO1_PWM_PIN);
     uint ch1 = pwm_gpio_to_channel(SERVO1_PWM_PIN);
@@ -68,10 +73,15 @@ void Servo::set_front_angle(int angle) {
 }
 
 void Servo::set_rear_angle(int angle) {
-    if (angle < 0) angle = 0;
-    else if (angle > 180) angle = 180;
+    if (angle < SERVO_MIN_SWEEP_ANGLE) {
+        angle = SERVO_MIN_SWEEP_ANGLE;
+    } 
+    else if (angle > SERVO_MAX_SWEEP_ANGLE) {
+        angle = SERVO_MAX_SWEEP_ANGLE;
+    }
 
-    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / 180.0f) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
+    float max_angle = (float) (SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE);
+    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / max_angle) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
     float duty_cycle = pulse_ms / 20.0f;
 
     uint slice2 = pwm_gpio_to_slice_num(SERVO2_PWM_PIN);
@@ -88,16 +98,16 @@ void Servo::set_rear_angle(int angle) {
 void Servo::single_front_sweep() {
     
     // Set the angle initially to 0 degrees
-    set_front_angle(0);
+    set_front_angle(SERVO_MIN_SWEEP_ANGLE);
 
     // Sweep from 0 degrees to 180 degrees
-    for (int angle = 0; angle < 180; angle++) {
+    for (int angle = SERVO_MIN_SWEEP_ANGLE; angle < SERVO_MAX_SWEEP_ANGLE; angle++) {
         set_front_angle(angle);
         sleep_ms(SWEEP_DELAY);
     }
 
     // Now sweep from 180 degrees back to 0 degrees
-    for (int angle = 180; angle > 0; angle--) {
+    for (int angle = SERVO_MAX_SWEEP_ANGLE; angle > SERVO_MIN_SWEEP_ANGLE; angle--) {
         set_front_angle(angle);
         sleep_ms(SWEEP_DELAY);
     }
@@ -109,13 +119,13 @@ void Servo::single_rear_sweep() {
     // set_rear_angle(0);
 
     // Sweep from 0 degrees to 180 degrees
-    for (int angle = 0; angle < 180; angle++) {
+    for (int angle = SERVO_MIN_SWEEP_ANGLE; angle < SERVO_MAX_SWEEP_ANGLE; angle++) {
         set_rear_angle(angle);
         sleep_ms(SWEEP_DELAY);
     }
 
     // Now sweep from 180 degrees back to 0 degrees
-    for (int angle = 180; angle > 0; angle--) {
+    for (int angle = SERVO_MAX_SWEEP_ANGLE; angle > SERVO_MIN_SWEEP_ANGLE; angle--) {
         set_rear_angle(angle);
         sleep_ms(SWEEP_DELAY);
     }

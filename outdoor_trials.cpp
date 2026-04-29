@@ -14,31 +14,48 @@
 
 // Instantiate objects
 TOF tof;
-Drive drive;
-Buffer buffer;
+// Drive drive;
+// Buffer buffer;
 Servo servo;
-IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
+// IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
 Navigation nav;
 
-uint32_t accum[MAX_SERVO_ANGLE + 1] = {0};
-uint16_t lidar_buffer[MAX_SERVO_ANGLE + 1] = {0};
+uint16_t lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
+int size = SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1;
 
 int main() {
     // Initialise serial monitor just in case I need it for debugging 
-    stdio_init_all();
+    // stdio_init_all();
 
+    // printf("=== MAIN STARTED ===\n");
     servo.init_front_servo();
+    servo.init_rear_servo();
+
+    servo.set_front_angle(90);
+    servo.set_rear_angle(90);
     
-    // while (1) {
-    //     // servo.single_front_sweep();
-    //     // servo.single_rear_sweep();
-    //     servo.single_front_sweep();
-    //     servo.single_rear_sweep();
-    // }
+    while (1) {
+        // servo.single_front_sweep();
+        // servo.single_rear_sweep();
+        servo.single_front_sweep();
+        servo.single_rear_sweep();
+    }
 
     // Initialise I2C and UART
     tof.init_front_i2c();
+    // tof.init_rear_i2c();
     // tof.init_uart();
+
+    // // In main, after init_front_i2c(), add a basic I2C probe:
+    // printf("Scanning I2C bus...\n");
+    // for (uint8_t addr = 0x08; addr < 0x78; addr++) {
+    //     uint8_t buf;
+    //     int ret = i2c_read_blocking(I2C_FRONT_PORT, addr, &buf, 1, false);
+    //     if (ret >= 0) {
+    //         printf("Device found at 0x%02X\n", addr);
+    //     }
+    // }
+    // printf("Scan done\n");
 
     // // Setting up the VL53L0X LiDAR and checking for errors
     tof.device_setup();
@@ -56,22 +73,22 @@ int main() {
     tof.calibration();
 
     // Keep track of the number of sweeps the servo has done
-    int num_sweeps = 0;
-    int temp = 360 / SKID_CHECK_ANGLE;
+    int num_sweeps = 0;;
 
     // // // Establish variables
     // float chosen_distance = 0.0f;
     // int chosen_angle = 0;
     // int run = 0;
 
-    tof.start_continuous_ranging();
+    // tof.start_continuous_ranging();
 
     // Testing the lidar scanning
     // Scan the surroundings and measure distances
-    nav.forward_sweep(CALIBRATION_SWEEPS, lidar_buffer, MAX_SERVO_ANGLE + 1);
+    // nav.forward_sweep(CALIBRATION_SWEEPS, lidar_buffer, MAX_SERVO_ANGLE + 1);
+    // nav.rear_sweep(CALIBRATION_SWEEPS, lidar_buffer, MAX_SERVO_ANGLE + 1);
 
     // Printing the entire buffer to know what the lidar reads
-    nav.print_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
+    // nav.print_buffer(lidar_buffer, MAX_SERVO_ANGLE + 1);
 
     // while (1) {
     //     for (run = 0; run < temp; run++) {

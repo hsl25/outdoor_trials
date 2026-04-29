@@ -18,6 +18,7 @@
 #define ALPHA 0.2 // Safety constant
 #define SKID_CHECK_ANGLE 90
 #define DISTANCE_DIVIDER 2
+#define ANGLE_STEP 5
 
 class Navigation {
     public:

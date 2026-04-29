@@ -27,6 +27,7 @@ Navigation::Navigation() {
 
 // This function takes as input the lidar buffer and its size, and also the number of times we will sweep back and forth
 // It simply performs the sweeping and loads data into the buffer
+// The input 'size' to this function requires: size = SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1
 void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     // Keep track of the number of sweeps the servo has done
     int num = 0;
@@ -35,12 +36,12 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
     while (num < num_sweeps) {
-        for (int i = 0; i < size; i++) {
+        for (int i = SERVO_MIN_SWEEP_ANGLE; i < size + SERVO_MIN_SWEEP_ANGLE; i++) {
             // Now increment the angle of the servo by 1 degree
             sv.set_front_angle(i);
 
             // Wait for servo to physically reach the degree
-            sleep_ms(100); 
+            // sleep_ms(100); 
 
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
@@ -49,26 +50,26 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
             // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
             // I define 1 sweep as 0 -> 180 and 180 -> 0
             // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
-            accum[i] += lidar_data;
+            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
             // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer
             // buffer.add_calib_sample(temp, i); 
   
         }
 
-        for (int i = size - 1; i >= 0; i--) {
+        for (int i = (size + SERVO_MIN_SWEEP_ANGLE) - 1; i >= SERVO_MIN_SWEEP_ANGLE; i--) {
             // Now increment the angle of the servo by 1 degree
             sv.set_front_angle(i);
 
             // Wait for servo to physically reach the degree
-            sleep_ms(100); 
+            // sleep_ms(100); 
 
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
             // This is step 3
             uint16_t lidar_data = my_tof.read_tof_continuous();
             // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            accum[i] += lidar_data;
+            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
             // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer 
             // buffer.add_calib_sample(temp, i);  
@@ -84,7 +85,7 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     }
 
     // For debugging
-    printf("Front sweep complete.\n");
+    // printf("Front sweep complete.\n");
 
 }
 
@@ -98,12 +99,12 @@ void Navigation::rear_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
 
     // 1. Set the angle of the servo to 0 degrees - this is done in the for loop when i = 0
     while (num < num_sweeps) {
-        for (int i = 0; i < size; i++) {
+        for (int i = SERVO_MIN_SWEEP_ANGLE; i < size + SERVO_MIN_SWEEP_ANGLE; i++) {
             // Now increment the angle of the servo by 1 degree
             sv.set_rear_angle(i);
 
             // Wait for servo to physically reach the degree
-            sleep_ms(100); 
+            // sleep_ms(100); 
 
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
@@ -112,26 +113,26 @@ void Navigation::rear_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
             // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
             // I define 1 sweep as 0 -> 180 and 180 -> 0
             // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
-            accum[i] += lidar_data;
+            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
             // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer
             // buffer.add_calib_sample(temp, i); 
   
         }
 
-        for (int i = size - 1; i >= 0; i--) {
+        for (int i = (size + SERVO_MIN_SWEEP_ANGLE) - 1; i >= SERVO_MIN_SWEEP_ANGLE; i--) {
             // Now increment the angle of the servo by 1 degree
             sv.set_rear_angle(i);
 
             // Wait for servo to physically reach the degree
-            sleep_ms(100); 
+            // sleep_ms(100); 
 
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
             // This is step 3
             uint16_t lidar_data = my_tof.read_tof_continuous();
             // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            accum[i] += lidar_data;
+            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
             // lidar_buffer[i] += (uint16_t) temp;
             // // Instead of making a function to add a sample, do it normally for any buffer 
             // buffer.add_calib_sample(temp, i);  
@@ -147,13 +148,15 @@ void Navigation::rear_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     }
 
     // For debugging
-    printf("Rear sweep complete.\n");
+    // printf("Rear sweep complete.\n");
 
 }
 
 void Navigation::print_buffer(uint16_t buf[], int size) {
     for (int i = 0; i < size; i++) {
-        printf("Angle: %d   Distance(mm): %u \n", i, buf[i]);
+        int temp = (int) (buf[i]);
+        int angle_to_print = i + SERVO_MIN_SWEEP_ANGLE;
+        printf("Angle: %d   Distance(mm): %d \n", angle_to_print, temp);
     }
 }
 

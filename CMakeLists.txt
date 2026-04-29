@@ -45,11 +45,6 @@ add_executable(outdoor_trials
                navigation.cpp
                IMU.cpp
                MPU6050.c
-               dhcpserver.cpp
-               json_builder.cpp
-               state_manager.cpp
-               tcp_server.cpp
-               wifi_ap.cpp
                vl53l0x/core/src/vl53l0x_api_calibration.c
                vl53l0x/core/src/vl53l0x_api_core.c
                vl53l0x/core/src/vl53l0x_api_ranging.c
