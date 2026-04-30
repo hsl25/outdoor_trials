@@ -17,9 +17,10 @@ TOF tof;
 Drive drive;
 Servo servo;
 IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
-Navigation nav;
+Navigation nav(tof, servo, imu, drive);
 
-uint16_t lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
+uint16_t front_lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
+uint16_t rear_lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
 int size = SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1;
 
 int main() {
@@ -28,30 +29,33 @@ int main() {
 
     // printf("=== MAIN STARTED ===\n");
     servo.init_front_servo();
-    servo.init_rear_servo();
+    // servo.init_rear_servo();
 
     servo.set_front_angle(90);
-    servo.set_rear_angle(90);
+    // servo.set_rear_angle(90);
+    // Let the servo physically reach the 90 degree position
+    sleep_ms(10000); 
 
     // Initialise I2C and UART
     tof.init_front_i2c();
-    tof.init_rear_i2c();
+    // tof.init_rear_i2c();
 
     // Setting up the VL53L0X LiDAR and checking for errors
     tof.device_setup();
 
-    // Initialise IMU
-    imu.init();
+    // // Initialise IMU
+    // imu.init();
 
-    while (1) {
-        servo.single_front_sweep();
-        servo.single_rear_sweep();
-    }
-
-    // Initialise motors
-    // drive.init_pwm_mode();
-    // drive.init_clk_divider();
-    // drive.setup_motors();
+    // while (1) {
+    //     imu.update();
+    //     float current_yaw = imu.read().yaw_deg;
+    //     printf("Yaw: %.2f\n", current_yaw);
+    // }
+    
+    // // Initialise motors
+    // // drive.init_pwm_mode();
+    // // drive.init_clk_divider();
+    // // drive.setup_motors();
 
     // TOF calibration
     // This involves checking for errors and setting up timing budget
@@ -66,11 +70,69 @@ int main() {
     int run = 0;
 
     tof.start_continuous_ranging();
+    sleep_ms(200);
 
     // Testing the lidar scanning
     // Scan the surroundings and measure distances
-    nav.forward_sweep(CALIBRATION_SWEEPS, lidar_buffer, size);
-    nav.rear_sweep(CALIBRATION_SWEEPS, lidar_buffer, size);
+    nav.forward_sweep(CALIBRATION_SWEEPS, front_lidar_buffer, size);
+    nav.rear_sweep(CALIBRATION_SWEEPS, rear_lidar_buffer, size);
+
+    // Old peak-finding algorithm
+    // std::vector<int> peak_angles = nav.calc_peaks(front_lidar_buffer, size);
+
+    // // Testing peak angles
+    // for (int i = 0; i < peak_angles.size(); i++) {
+    //     printf("Peak angle %d: %d degrees \n", i, peak_angles[i]);
+    // }
+
+    // // Make a vector of all the sweep angles at the different peaks
+    // std::vector<int> min_sweep_angles;
+
+    // for (int x = 0; x < peak_angles.size(); x++) {
+    //     // Calculate the minimum sweep angle for each peak calculated before
+    //     int msa = nav.calc_min_sweep_angle(front_lidar_buffer[peak_angles[x]]);
+    //     min_sweep_angles.push_back(msa);
+    // }
+
+    // // Testing minimum sweep angles
+    // for (int i = 0; i < min_sweep_angles.size(); i++) {
+    //     printf("Minimum sweep angle %d: %d degrees \n", i, min_sweep_angles[i]);
+    // }
+
+    // // Calculate the gap widths for each of the peaks
+    // std::vector<float> gap_widths = nav.calc_gap_width(peak_angles, min_sweep_angles, front_lidar_buffer, size);
+
+    // // Testing gap widths
+    // for (int i = 0; i < gap_widths.size(); i++) {
+    //     printf("Gap width %d: %d mm \n", i, gap_widths[i]);
+    // }
+
+    // New gap-finding algorithm
+    std::vector<Gap> gaps = nav.find_gaps(front_lidar_buffer, size);
+
+    printf("Found %d traversable gaps:\n", gaps.size());
+    printf("Checkpoint 1\n");
+
+    for (int i = 0; i < (int)gaps.size(); i++) {
+        printf("Gap %d: angles %d - %d, width %.1f mm\n", i, gaps[i].start_angle + SERVO_MIN_SWEEP_ANGLE, gaps[i].end_angle + SERVO_MIN_SWEEP_ANGLE, gaps[i].width);
+    }
+
+    // Choose the widest gap
+    int best = 0;
+    printf("Checkpoint 2\n");
+    for (int i = 1; i < (int)gaps.size(); i++) {
+        if (gaps[i].width > gaps[best].width) best = i;
+    }
+
+    printf("Checkpoint 3\n");
+
+    if (!gaps.empty()) {
+        printf("Checkpoint 4\n");
+        int centre_angle = (gaps[best].start_angle + gaps[best].end_angle) / 2;
+        printf("Checkpoint 5\n");
+        int imu_angle = centre_angle + SERVO_MIN_SWEEP_ANGLE - 90;
+        printf("Steering toward gap %d, centre angle %d, IMU angle %d\n", best, centre_angle + SERVO_MIN_SWEEP_ANGLE, imu_angle);
+    }
 
     // while (1) {
     //     for (run = 0; run < temp; run++) {

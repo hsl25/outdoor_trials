@@ -59,10 +59,12 @@ pico_set_program_version(outdoor_trials "0.1")
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(outdoor_trials 0)
 pico_enable_stdio_usb(outdoor_trials 1)
+target_link_options(outdoor_trials PRIVATE -Wl,--wrap=printf)
 
 # Add the standard library to the build
 target_link_libraries(outdoor_trials
         pico_stdlib
+        pico_float
         hardware_pwm
         pico_time
         pico_cyw43_arch_lwip_poll
