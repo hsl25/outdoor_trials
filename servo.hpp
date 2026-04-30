@@ -22,8 +22,8 @@
 #define MAX_SERVO_ANGLE 180 // This is the maximum angle scope of the servo
 #define SERVO_MIN_PULSE_MS 0.5f
 #define SERVO_MAX_PULSE_MS 2.5f
-#define SERVO_MIN_SWEEP_ANGLE 30
-#define SERVO_MAX_SWEEP_ANGLE 150
+#define SERVO_MIN_SWEEP_ANGLE 40
+#define SERVO_MAX_SWEEP_ANGLE 140
 
 class Servo {
     public:

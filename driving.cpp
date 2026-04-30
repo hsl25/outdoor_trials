@@ -87,7 +87,7 @@ void Drive::init_pwm(uint32_t pin, float duty) {
     if (duty > 1.0f) duty = 1.0f;
     if (duty < 0.0f) duty = 0.0f;
 
-    pwm_set_chan_level(slice, ch, duty * TOP);
+    pwm_set_chan_level(slice, ch, 0);
 
     pwm_set_enabled(slice, true);
 }
@@ -148,13 +148,14 @@ void Drive::setup_motors() {
     gpio_put(MOTOR5_DIR_PIN, 0);
     gpio_put(MOTOR6_DIR_PIN, 0);
 
-    // Set initial speed
-    pwm_set_gpio_level(MOTOR1_PWM_PIN, new_motor_level);
-    pwm_set_gpio_level(MOTOR2_PWM_PIN, old_motor_level);
-    pwm_set_gpio_level(MOTOR3_PWM_PIN, old_motor_level);
-    pwm_set_gpio_level(MOTOR4_PWM_PIN, new_motor_level);
-    pwm_set_gpio_level(MOTOR5_PWM_PIN, old_motor_level);
-    pwm_set_gpio_level(MOTOR6_PWM_PIN, old_motor_level);
+    // I commented this out because I want the motors to start with 0 speed initially
+    // // Set initial speed
+    // pwm_set_gpio_level(MOTOR1_PWM_PIN, new_motor_level);
+    // pwm_set_gpio_level(MOTOR2_PWM_PIN, old_motor_level);
+    // pwm_set_gpio_level(MOTOR3_PWM_PIN, old_motor_level);
+    // pwm_set_gpio_level(MOTOR4_PWM_PIN, new_motor_level);
+    // pwm_set_gpio_level(MOTOR5_PWM_PIN, old_motor_level);
+    // pwm_set_gpio_level(MOTOR6_PWM_PIN, old_motor_level);
 }
 
 // ---------------- MOTOR CONTROL ----------------

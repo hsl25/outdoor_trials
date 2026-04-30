@@ -27,7 +27,7 @@ IMU::IMU(i2c_inst_t* i2c_port,
       gz_bias_dps_(0.0f),
       gz_lp_dps_(0.0f),
       complementary_alpha_(0.98f),
-      yaw_deadband_dps_(0.4f),
+      yaw_deadband_dps_(0.0f),
       acc_stationary_threshold_mps2_(0.25f),
       gyro_stationary_threshold_dps_(1.5f),
       stationary_(false) {
@@ -62,8 +62,9 @@ bool IMU::init() {
 
     // Gyro calibration from the library itself
     // Should be done while sensor is stationary during startup
+    sleep_ms(200);  // Let sensor settle before calibration
     mpu6050_calibrate_gyro(&mpu_, 100);
-    mpu6050_set_threshold(&mpu_, 1);
+    mpu6050_set_threshold(&mpu_, 0);
 
     initialized_ = true;
     first_update_ = true;
@@ -180,6 +181,9 @@ bool IMU::update() {
     if (std::fabs(gz_corrected_dps) < yaw_deadband_dps_) {
         gz_corrected_dps = 0.0f;
     }
+
+    // printf("gz_raw=%.3f gz_lp=%.3f gz_bias=%.3f gz_corr=%.3f dt=%.4f\n",
+    //    gz, gz_lp_dps_, gz_bias_dps_, gz_corrected_dps, dt_s);
 
     // Integrate yaw
     yaw_deg_ += gz_corrected_dps * dt_s;
