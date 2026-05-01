@@ -5,8 +5,8 @@
 #include <hardware/pwm.h>
 
 // PWM defines
-#define SERVO1_PWM_PIN 18 // GP18 used for PWM control of the front servo motor
-#define SERVO2_PWM_PIN 19 // GP18 used for PWM control of the front servo motor
+#define SERVO1_PWM_PIN 0 // GP18 used for PWM control of the front servo motor
+#define SERVO2_PWM_PIN 1 // GP18 used for PWM control of the front servo motor
 #define PWM_DIVIDER 64.0f // The servo needs to receive a 50Hz signal, so we need to adjust the divider and TOP value. Remember, the clk frequency on the RP2040 is around 125MHz
 #define PWM_TOP 39062 // Will adjust this later but I just copied this from driving.hpp for now
 #define SERVO_DUTY_CYCLE 0.075 // Will be tuned later
@@ -14,7 +14,7 @@
 
 // Servo defines
 #define SWEEP_DELAY 5 // 10ms delay between angle incremements when sweeping the servo back and forth
-#define CALIBRATION_SWEEPS 2 // Before the rover starts moving, the servo will scan back and forth 10 times for distance cailbration
+#define CALIBRATION_SWEEPS 4 // Before the rover starts moving, the servo will scan back and forth 10 times for distance cailbration
 #define ZERO_PULSE 1.0 // PWM pulse time for 0 degrees
 #define NINETY_PULSE 1.5 // PWM pulse time for 90 degrees
 #define ONE_EIGHTY_PULSE 2.0 // PWM pulse time for 180 degrees
@@ -22,8 +22,8 @@
 #define MAX_SERVO_ANGLE 180 // This is the maximum angle scope of the servo
 #define SERVO_MIN_PULSE_MS 0.5f
 #define SERVO_MAX_PULSE_MS 2.5f
-#define SERVO_MIN_SWEEP_ANGLE 40
-#define SERVO_MAX_SWEEP_ANGLE 140
+#define SERVO_MIN_SWEEP_ANGLE 50
+#define SERVO_MAX_SWEEP_ANGLE 130
 
 class Servo {
     public:

@@ -34,7 +34,7 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
             sv_.set_front_angle(i);
 
             // Wait for servo to physically reach the degree
-            // sleep_ms(100); 
+            sleep_ms(10); 
 
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
@@ -50,23 +50,11 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
   
         }
 
-        for (int i = (size + SERVO_MIN_SWEEP_ANGLE) - 1; i >= SERVO_MIN_SWEEP_ANGLE; i--) {
-            // Now increment the angle of the servo by 1 degree
+        for (int i = size + SERVO_MIN_SWEEP_ANGLE; i > SERVO_MIN_SWEEP_ANGLE; i--) {
+            // Now slowly reset the servo back to to the start scan position
             sv_.set_front_angle(i);
-
-            // Wait for servo to physically reach the degree
-            // sleep_ms(100); 
-
-            // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
-            // Then, the data point is added to the buffer
-            // This is step 3
-            uint16_t lidar_data = tof_.read_tof_continuous();
-            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
-            // lidar_buffer[i] += (uint16_t) temp;
-            // // Instead of making a function to add a sample, do it normally for any buffer 
-            // buffer.add_calib_sample(temp, i);  
-
+            sleep_ms(10);
+  
         }
         
         num++;
@@ -74,7 +62,7 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
     }
 
     for (int i = 0; i < size; i++) {
-        lidar_buf[i] = (accum[i] / (2 * num_sweeps));
+        lidar_buf[i] = (accum[i] / num_sweeps);
     }
 
     // For debugging
@@ -113,31 +101,16 @@ void Navigation::rear_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
   
         }
 
-        for (int i = (size + SERVO_MIN_SWEEP_ANGLE) - 1; i >= SERVO_MIN_SWEEP_ANGLE; i--) {
-            // Now increment the angle of the servo by 1 degree
-            sv_.set_rear_angle(i);
-
-            // Wait for servo to physically reach the degree
-            // sleep_ms(100); 
-
-            // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
-            // Then, the data point is added to the buffer
-            // This is step 3
-            uint16_t lidar_data = tof_.read_tof_continuous();
-            // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS);
-            accum[i - SERVO_MIN_SWEEP_ANGLE] += lidar_data;
-            // lidar_buffer[i] += (uint16_t) temp;
-            // // Instead of making a function to add a sample, do it normally for any buffer 
-            // buffer.add_calib_sample(temp, i);  
-
-        }
+        // Reset servo angle
+        sv_.set_rear_angle(SERVO_MIN_SWEEP_ANGLE);
+        sleep_ms(300);
         
         num++;
 
     }
 
     for (int i = 0; i < size; i++) {
-        lidar_buf[i] = (accum[i] / (2 * num_sweeps));
+        lidar_buf[i] = (accum[i] / num_sweeps);
     }
 
     // For debugging
@@ -154,6 +127,8 @@ void Navigation::print_buffer(uint16_t buf[], int size) {
 }
 
 float Navigation::calc_width(uint16_t length1, int angle1, uint16_t length2, int angle2) {
+    int real_angle1 = angle1 + SERVO_MIN_SWEEP_ANGLE;
+    int real_angle2 = angle2 + SERVO_MIN_SWEEP_ANGLE;
     int theta_diff = angle2 - angle1;
     float x1 = (float) length1;
     float x2 = (float) length2;
@@ -340,84 +315,109 @@ std::vector<float> Navigation::calc_gap_width(std::vector<int> peak_angles, std:
     
 }
 
+void Navigation::median_filter(uint16_t buf[], int size) {
+    std::vector<uint16_t> temp(buf, buf + size);
+    for (int i = 1; i < size - 1; i++) {
+        uint16_t a = temp[i - 1], b = temp[i], c = temp[i + 1];
+        // Sort 3 values and take the middle
+        if (a > b) std::swap(a, b);
+        if (b > c) std::swap(b, c);
+        if (a > b) std::swap(a, b);
+        buf[i] = b;
+    }
+}
+
 std::vector<Gap> Navigation::find_gaps(uint16_t buf[], int size) {
     std::vector<Gap> gaps;
 
+    // Sanitise buffer
     for (int i = 0; i < size; i++) {
         if (buf[i] == 0xFFFF || buf[i] > MAX_RANGE) {
-            buf[i] = 0;  // treat sensor errors as "obstacle here"
+            buf[i] = MAX_RANGE;
         }
     }
 
+    // Smooth out single-point spikes before gap detection
+    median_filter(buf, size);
+
+    // Compute variance of buf[idx-VARIANCE_WINDOW .. idx+VARIANCE_WINDOW]
+    auto local_variance = [&](int idx) -> float {
+        int lo = std::max(0, idx - VARIANCE_WINDOW);
+        int hi = std::min(size - 1, idx + VARIANCE_WINDOW);
+        int n  = hi - lo + 1;
+
+        float mean = 0.0f;
+        for (int k = lo; k <= hi; k++) mean += buf[k];
+        mean /= n;
+
+        float var = 0.0f;
+        for (int k = lo; k <= hi; k++) {
+            float diff = (float)buf[k] - mean;
+            var += diff * diff;
+        }
+        return var / n;
+    };
+
+    // A point is "open" if it exceeds MIN_GAP_DISTANCE AND
+    // its drop from the previous point doesn't indicate an obstacle edge
+    auto is_open = [&](int idx) -> bool {
+        if (buf[idx] < MIN_GAP_DISTANCE) return false;
+        if (idx > 0 && buf[idx - 1] > 0) {
+            float prev = (float)buf[idx - 1];
+            float curr = (float)buf[idx];
+            float drop = (prev - curr) / prev;   // fractional drop
+            if (drop > MAX_STEP_FRACTION) return false;
+        }
+
+        // Variance check - reject noisy regions even if distance is high
+        if (local_variance(idx) > MAX_GAP_VARIANCE) return false;
+
+        return true;
+    };
+
     int i = 0;
     while (i < size) {
-        // Look for the start of a gap - MIN_GAP_CONFIRM consecutive points above threshold
+        // Find confirmed gap start: MIN_GAP_CONFIRM consecutive open points
         int confirm = 0;
-
         while (i < size && confirm < MIN_GAP_CONFIRM) {
-            if (buf[i] > MIN_GAP_DISTANCE) {
+            if (is_open(i)) {
                 confirm++;
             } else {
-                confirm = 0;  // reset - must be consecutive
+                confirm = 0;
             }
             i++;
         }
 
-        if (confirm < MIN_GAP_CONFIRM) {
-            break;  // reached end of buffer without confirming
-        }
+        if (confirm < MIN_GAP_CONFIRM) break;
 
-        // Gap confirmed - start_angle is where the run began
         Gap g;
         g.start_angle = i - MIN_GAP_CONFIRM;
+        if (g.start_angle < 0) g.start_angle = 0;
+        g.start_dist = buf[g.start_angle];
 
-        if (g.start_angle < 0) {
-            g.start_angle = 0;
-        }
-
-        if (g.start_angle > size) {
-            g.start_angle = size;
-        }
-        
-        g.start_dist  = buf[g.start_angle];
-
-        // Now find the end: GAP_HYSTERESIS consecutive points below threshold
+        // Find gap end: GAP_HYSTERESIS consecutive non-open points
         int below = 0;
-
         while (i < size) {
-            if (buf[i] < MIN_GAP_DISTANCE) {
+            if (!is_open(i)) {
                 below++;
-                if (below >= GAP_HYSTERESIS) {
-                    break;
-                }
+                if (below >= GAP_HYSTERESIS) break;
             } else {
-                below = 0;  // back above threshold, reset hysteresis
+                below = 0;
             }
             i++;
         }
 
-        // end_angle is the last point still above threshold
         g.end_angle = i - GAP_HYSTERESIS;
-        if (g.end_angle < 0) {
-            g.end_angle = 0;
-        }
-
-        if (g.end_angle >= size) {
-            g.end_angle = size - 1;
-        }
-
-        if (g.end_angle <= g.start_angle) {
-            continue;  // degenerate, skip
-        }
+        if (g.end_angle < 0)      g.end_angle = 0;
+        if (g.end_angle >= size)  g.end_angle = size - 1;
+        if (g.end_angle <= g.start_angle) continue;
 
         g.end_dist = buf[g.end_angle];
         g.width = calc_width(g.start_dist, g.start_angle, g.end_dist,   g.end_angle);
 
-        // Only keep gaps the rover can actually fit through
         if (g.width >= ROVER_WIDTH + SAFETY_MARGIN) {
             gaps.push_back(g);
         }
-
     }
 
     return gaps;
@@ -441,67 +441,59 @@ int Navigation::choose_direction(std::vector<float> gaps) {
 
 // This function should simply skid-steer into place until the angle desired is equal to the change in yaw from the initial yaw 
 // The arguments are the initial yaw (found by updating the IMU and measuring the yaw) and the final yaw (found by calculation based on the angle you desire)
-void Navigation::skid_into_position(float start_yaw, float final_yaw) {
-    float delta = 0.0f;
-    int steer_angle = (int) (final_yaw - start_yaw);
+void Navigation::skid_into_position(float start_yaw, float delta_deg) {
+    while (delta_deg >  180.0f) delta_deg -= 360.0f;
+    while (delta_deg <= -180.0f) delta_deg += 360.0f;
 
-    if (steer_angle > 0) {
-            // Skid-steer left (or anticlockwise to be more specific) until the yaw matches 20 degrees
-            dr_.skid_left();
+    if (fabsf(delta_deg) < SKID_DEADBAND_DEG) return;  // ignore tiny rotations
 
-            while (true) {
-                imu_.update();
-                ImuData data = imu_.read();
+    if (delta_deg > 0.0f) {
+        // clockwise
+        dr_.skid_right(); 
+    } else { 
+        dr_.skid_left();   // anticlockwise
+    }
 
-                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
-                if (data.valid) {
-                    // Each time, we measure the yaw from the IMU and compare to the start_yaw until the change in yaw is the change we need
-                    delta = data.yaw_deg - start_yaw;
+    while (true) {
+        imu_.update();
+        ImuData data = imu_.read();
 
-                    // If delta >= steer_angle, then the change in angle w.r.t start_yaw is the same as or greater than the change we require, so we brake and break
-                    if (delta >= steer_angle) {
-                        dr_.brake();
-                        break;
-                    }
-                } else {
-                    printf("IMU data invalid\r\n");
-                }
-
-                // Add small delay to reduce I2C spam
-                sleep_ms(10);
-
-            }
-
-        } else if (steer_angle < 0) {
-            dr_.skid_right();
-
-            while (true) {
-                imu_.update();
-                ImuData data = imu_.read();
-
-                // Check if the data is valid, and if so, store the yaw angle as the current yaw angle
-                if (data.valid) {
-                    // Each time, we measure the yaw from the IMU and compare to the start_yaw until the change in yaw is the change we need
-                    delta = data.yaw_deg - start_yaw;
-
-                    // If delta >= steer_angle, then the change in angle w.r.t start_yaw is the same as or greater than the change we require, so we brake and break
-                    if (delta <= steer_angle) {
-                        dr_.brake();
-                        break;
-                    }
-                } else {
-                    printf("IMU data invalid\r\n");
-                }
-
-                // Add small delay to reduce I2C spam
-                sleep_ms(10);
-
-            }
-
-        } else if (steer_angle == 0) {
-            // More to be done here later
-            dr_.drive_forward();
+        if (!data.valid) { 
+            sleep_ms(10); 
+            continue; 
         }
+
+        // Each time, we measure the yaw from the IMU and compare to the start_yaw until the change in yaw is the change we need
+        float actual_delta = data.yaw_deg - start_yaw;
+
+        // Wrap actual_delta to (-180, +180] to handle the 0°/360° boundary
+        while (actual_delta > 180.0f) {
+            actual_delta -= 360.0f;
+        }
+
+        while (actual_delta <= -180.0f) {
+            actual_delta += 360.0f;
+        }
+
+        bool done = false;
+        if (delta_deg > 0.0f && actual_delta >=  SKID_STOP_FRACTION * delta_deg) {
+            done = true;
+        }
+
+        if (delta_deg < 0.0f && actual_delta <=  SKID_STOP_FRACTION * delta_deg) {
+            done = true;
+        }
+
+        if (done) { 
+            dr_.brake(); 
+            break; 
+        }
+
+        // Add small delay to reduce I2C spam
+        sleep_ms(10);
+
+    }
+
 }
 
 void Navigation::reset_buffer(uint16_t lidar_buff[], int size) {
@@ -509,5 +501,103 @@ void Navigation::reset_buffer(uint16_t lidar_buff[], int size) {
         lidar_buff[i] = 0;
     }
 } 
+
+bool Navigation::space_check(uint16_t buf[], int size) {
+    for (int i = 0; i < size; i++) {
+        if (buf[i] == MAX_RANGE) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int Navigation::check_max_range(uint16_t buf[], int size) {
+    int best_count = 0;
+    int best_start = 0;
+    int count = 0;
+    int cur_start = 0;
+
+    for (int i = 0; i < size; i++) {           
+        if (buf[i] >= MAX_RANGE) {
+            if (count == 0) cur_start = i;     
+            count++;
+            if (count > best_count) {           
+                best_count = count;
+                best_start = cur_start;
+            }
+        } else {
+            count = 0;                        
+        }
+    }
+   
+    if (best_count == 0) {
+        return size / 2;
+    }
+
+    if (best_count % 2 == 0) {
+        return (best_count / 2) + best_start;
+    } else {
+        return ((best_count + 1) / 2) + best_start;
+    }
+}
+
+std::vector<int> Navigation::detect_edge(uint16_t buf[], int size) {
+    std::vector<int> edge_angles;
+
+    if (size < 3) return edge_angles;  // not enough points for i-1, i, i+1
+    if (size < 2 * NUM_CHECKS + 1) return edge_angles; // need enough points for checks
+
+    for (int i = 1; i < size - 1; i++) {
+
+        // local minimum candidate
+        if ((buf[i - 1] > buf[i]) && (buf[i + 1] > buf[i])) {
+
+            int left_count = 0;
+            int right_count = 0;
+
+            bool left_flag = false;
+            bool right_flag = false;
+
+            // Check left side safely
+            for (int k = 1; k <= NUM_CHECKS; k++) {
+                if (i - k < 0) break;  // stop if we'd go negative
+
+                if (buf[i - k] > buf[i]) {
+                    left_count++;
+                } else {
+                    left_count = 0;
+                    break;
+                }
+            }
+
+            if (left_count == NUM_CHECKS) {
+                left_flag = true;
+            }
+
+            // Check right side safely
+            for (int j = 1; j <= NUM_CHECKS; j++) {
+                if (i + j >= size) break;  // stop if we'd exceed array
+
+                if (buf[i + j] > buf[i]) {
+                    right_count++;
+                } else {
+                    right_count = 0;
+                    break;
+                }
+            }
+
+            if (right_count == NUM_CHECKS) {
+                right_flag = true;
+            }
+
+            if (left_flag && right_flag) {
+                edge_angles.push_back(i);
+            }
+        }
+    }
+
+    return edge_angles;
+}
 
 

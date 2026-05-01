@@ -60,9 +60,7 @@ void Servo::set_front_angle(int angle) {
         angle = SERVO_MAX_SWEEP_ANGLE;
     }
     
-    float max_angle = (float) (SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE);
-    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / max_angle) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
-
+    float pulse_ms = SERVO_MIN_PULSE_MS + (angle / 180.0f) * (SERVO_MAX_PULSE_MS - SERVO_MIN_PULSE_MS);
     uint slice1 = pwm_gpio_to_slice_num(SERVO1_PWM_PIN);
     uint ch1 = pwm_gpio_to_channel(SERVO1_PWM_PIN);
 

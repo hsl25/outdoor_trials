@@ -15,10 +15,6 @@ TOF::TOF() {
     front_dev.I2cDevAddr = 0x29;
     front_dev.i2c_port = I2C_FRONT_PORT;
 
-    // Rear sensor on i2c0
-    rear_dev.I2cDevAddr  = 0x29;
-    rear_dev.i2c_port = I2C_REAR_PORT;
-
     // Default active sensor to front
     pDev = (VL53L0X_DEV)&front_dev;
 }
@@ -31,24 +27,6 @@ void TOF::init_front_i2c() {
     gpio_set_function(FRONT_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(FRONT_SDA_PIN);
     gpio_pull_up(FRONT_SCL_PIN);
-}
-
-void TOF::init_rear_i2c() {
-    // ---------------- I2C INIT ----------------
-    i2c_init(I2C_REAR_PORT, I2C_BAUDRATE);
-
-    gpio_set_function(REAR_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(REAR_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(REAR_SDA_PIN);
-    gpio_pull_up(REAR_SCL_PIN);
-}
-
-void TOF::init_uart() {
-    uart_init(UART_ID, UART_BAUD_RATE);
-
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-
 }
 
 void TOF::device_setup() {
@@ -144,6 +122,11 @@ uint16_t TOF::read_tof_continuous() {
     // If there is an error, return a large value (e.g., 0xFFFF) to indicate an error.
     return MAX_RANGE;
 
+}
+
+void TOF::stop_ranging() {
+    VL53L0X_StopMeasurement(pDev);
+    sleep_ms(5);  // give the device time to finish stopping before next command
 }
 
 

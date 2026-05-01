@@ -107,8 +107,8 @@ void IMU::updateStationaryState(float ax, float ay, float az,
 }
 
 void IMU::wrapYaw() {
-    while (yaw_deg_ > 180.0f) yaw_deg_ -= 360.0f;
-    while (yaw_deg_ < -180.0f) yaw_deg_ += 360.0f;
+    while (yaw_deg_ >=360.0f) yaw_deg_ -= 360.0f;
+    while (yaw_deg_ <0.0f) yaw_deg_ += 360.0f;
 }
 
 bool IMU::update() {

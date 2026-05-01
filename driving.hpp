@@ -19,6 +19,7 @@
 #define OUTER_DUTY_CYCLE 0.5 // Refers to the PWM duty cycle of the outer wheels when steering
 #define TURN_RADIUS 0.25 // 0.50 metre turning radius
 #define TRACK_WIDTH 0.20 // 0.2m distance between the left and right wheels on the same axle
+#define PWM_SKID_DIVIDER 0.5
 
 //  ==================== PWM Pins used (1 speed pin per motor) ====================
 #define MOTOR1_PWM_PIN 3    // GP3 - motor 1
