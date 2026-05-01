@@ -44,7 +44,8 @@ bool IMU::init() {
     gpio_pull_up(sda_pin_);
     gpio_pull_up(scl_pin_);
 
-    mpu_ = mpu6050_init(i2c_port_, address_);
+    // Already used in constructor
+    // mpu_ = mpu6050_init(i2c_port_, address_);
 
     if (!mpu6050_begin(&mpu_)) {
         initialized_ = false;

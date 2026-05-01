@@ -39,7 +39,7 @@ void Navigation::forward_sweep(int num_sweeps, uint16_t lidar_buf[], int size) {
             // When tof.read_continuous() runs, it checks whether data is available, and if so, it returns 1 data point
             // Then, the data point is added to the buffer
             // This is step 3
-            uint16_t lidar_data = tof_.read_tof_continuous();
+            uint16_t lidar_data = 0; // tof_.read_tof_continuous();
             // We do 2 * CALIBRATION_SWEEPS because each sweep passes through an angle twice
             // I define 1 sweep as 0 -> 180 and 180 -> 0
             // float temp = ((float) lidar_data) / (2 * CALIBRATION_SWEEPS); 
@@ -600,4 +600,13 @@ std::vector<int> Navigation::detect_edge(uint16_t buf[], int size) {
     return edge_angles;
 }
 
+bool Navigation::check_openings(uint16_t buf[], int size, int min_dist) {
+    for (int i = 0; i  < size; i++) {
+        if (buf[i] < min_dist) {
+            return false;
+        }
+    }
+
+    return true;
+}
 

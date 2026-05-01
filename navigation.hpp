@@ -10,6 +10,7 @@
 #include "IMU.hpp"
 #include "driving.hpp"
 #include "matrix.hpp"
+#include "buffer.hpp"
 
 #define DEG_TO_RAD 0.01745329251 // One radian
 #define RAD_TO_DEG 57.2957795131
@@ -31,6 +32,7 @@
 #define NUM_CHECKS 5
 #define SKID_DEADBAND_DEG 2.0f 
 #define SKID_STOP_FRACTION  0.90f 
+#define THRESHOLD_DIST 500
 
 struct Gap {
     int start_angle;    // buffer index where gap opens
@@ -56,6 +58,7 @@ class Navigation {
         void skid_into_position(float start_yaw, float delta_deg);
         void reset_buffer(uint16_t lidar_buff[], int size);
         bool space_check(uint16_t buf[], int size);
+        bool check_openings(uint16_t buf[], int size, int min_dist);
         int check_max_range(uint16_t buf[], int size);
         std::vector<int> detect_edge(uint16_t buf[], int size);
     private:
