@@ -19,18 +19,18 @@ Servo servo;
 IMU imu(i2c0, IMU_SDA_PIN, IMU_SCL_PIN, MPU6050_ADDRESS_A0_GND);
 Navigation nav(tof, servo, imu, drive);
 
-uint16_t front_lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
-uint16_t rear_lidar_buffer[SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1] = {0};
-int size = SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE + 1;
+const int size = ((SERVO_MAX_SWEEP_ANGLE - SERVO_MIN_SWEEP_ANGLE) / ANGLE_STEP) + 1;
+uint16_t front_lidar_buffer[size] = {0};
+uint16_t rear_lidar_buffer[size] = {0};
 
 int main() {
     // Initialise serial monitor just in case I need it for debugging 
     stdio_init_all();
+    int skid_check_angle = 90;
 
-    int temp = 360 / SKID_CHECK_ANGLE;
+    int num_rotations = 360 / skid_check_angle;
 
     servo.init_front_servo();
-    servo.init_rear_servo();
 
     // while (!stdio_usb_connected()) {    
     //     sleep_ms(10);
@@ -40,9 +40,11 @@ int main() {
     servo.set_front_angle(90);
     sleep_ms(1000);
     printf("scan complete 1\n");
+
     servo.set_front_angle(SERVO_MIN_SWEEP_ANGLE);
     sleep_ms(1000);
     printf("scan complete 2\n");
+
     servo.set_front_angle(SERVO_MAX_SWEEP_ANGLE);
     sleep_ms(1000);
     printf("scan complete 3\n");
@@ -80,22 +82,53 @@ int main() {
     int imu_angle = 0;
     int run = 0;
     float start_yaw = 0;
-    bool found = false;
-    
+    int max_index = 0;
+    bool nav_success = false;
+
     sleep_ms(201);
+
+    // while(1) {
+    //     nav.skid_into_position(90);
+    //     sleep_ms(3000);
+    // }
 
     // nav.print_buffer(front_lidar_buffer, size);
 
     while (1) {
-        for (run = 0; run < temp; run++) {
+        for (run = 0; run < num_rotations; run++) {
             // Scan the surroundings and measure distances
+            tof.stop_ranging();
             tof.start_continuous_ranging();
             nav.forward_sweep(CALIBRATION_SWEEPS, front_lidar_buffer, size);
+            tof.stop_ranging();
+
+            imu.update();
+            start_yaw = imu.read().yaw_deg;
 
             if (nav.check_openings(front_lidar_buffer, size, THRESHOLD_DIST)) {
-                
+                max_index = nav.max_index(front_lidar_buffer, size);
+                imu_angle = max_index + SERVO_MIN_SWEEP_ANGLE - 90;
 
-            } else if (!nav.check_openings(front_lidar_buffer, size, THRESHOLD_DIST)) {
+                float target_d = (front_lidar_buffer[max_index] / 1000.0f) * THRESHOLD_RATIO;
+                float drive_t = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, target_d);
+
+                nav.skid_into_position(imu_angle);
+                drive.brake();
+
+                sleep_ms(3000);
+
+                drive.drive_forward();
+                sleep_ms((uint32_t)(drive_t * 1000.0f));
+                drive.brake();
+
+                nav.reset_buffer(front_lidar_buffer, size);
+                skid_check_angle = 90;
+                num_rotations = 360 / skid_check_angle;
+                nav_success = true;
+
+                break;
+
+            } else {
                 // This detect_edge function returns a vector of (hopefully) 2 indexes for the lidar buffer, where edges may exist
                 std::vector<int> edges = nav.detect_edge(front_lidar_buffer, size);
 
@@ -125,11 +158,32 @@ int main() {
                     // 180 degrees --> +90 degrees
                     // Therefore, I need to subtract 90 degrees form 'chosen_angle'
 
-                    nav.skid_into_position(start_yaw, imu_angle);
+                    nav.skid_into_position(imu_angle);
                     drive.brake();
 
-                    // Ok now we are in position so we can break and start navigating
-                    found = true;
+                    sleep_ms(3000);
+
+                    // The chosen distance is in mm, we need to convert this to metres
+                    // This gives time in seconds 
+                    float target_m = (chosen_distance / 1000.0f) / (float)DISTANCE_DIVIDER;
+                    float drive_time = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, target_m);
+
+                    // Now drive
+                    drive.drive_forward();
+                    sleep_ms((uint32_t)(drive_time * 1000));
+                    drive.brake();
+                    tof.stop_ranging();
+
+                    // Reset variables
+                    num_sweeps = 0;
+                    centre_angle = 0;
+                    chosen_gap = 0;
+                    chosen_distance = 0;
+
+                    // Reset buffer
+                    nav.reset_buffer(front_lidar_buffer, size);
+
+                    // Now break out of the loop
                     break;
 
                 } else {
@@ -137,12 +191,14 @@ int main() {
                     start_yaw = imu.read().yaw_deg;
 
                     if (nav.space_check(front_lidar_buffer, size)) {
-                        int max_centre = nav.check_max_range(front_lidar_buffer, size);
+                        int max_centre = nav.check_max_range(front_lidar_buffer, size, MAX_RANGE);
                         imu_angle = max_centre + SERVO_MIN_SWEEP_ANGLE - 90;
-                        nav.skid_into_position(start_yaw, (float)imu_angle);
+                        nav.skid_into_position((float)imu_angle);
+                        drive.brake();
                     } else {
                         // completely stuck — rotate by SKID_CHECK_ANGLE and rescan
-                        nav.skid_into_position(start_yaw, (float)SKID_CHECK_ANGLE);
+                        nav.skid_into_position((float)skid_check_angle);
+                        drive.brake();
                     }
 
                     drive.brake();
@@ -159,38 +215,15 @@ int main() {
                     
                 }
 
-                // This part only runs if we find a suitable gap
-                if (found) {
-                    // OK so we know where to go, now we have to calculate how far to travel and also verify with the IMU
-                    // The chosen distance is in mm, we need to convert this to metres
-                    // This gives time in seconds 
-                    float target_m = (chosen_distance / 1000.0f) / (float)DISTANCE_DIVIDER;
-                    float drive_time = drive.calc_drive_time(WHEEL_DIAMETER, OLD_MOTOR_RPM, target_m);
-
-                    // Now drive
-                    drive.drive_forward();
-                    sleep_ms((uint32_t)(drive_time * 1000));
-                    drive.brake();
-
-                    // Ok, now we have finished navigating. 
-                    // Now we simply scan again and navigate again, and this cycle continues till the rover is turned off via the GUI
-                    // We still need to reset everything though
-
-                    // Reset variables
-                    num_sweeps = 0;
-                    centre_angle = 0;
-                    chosen_gap = 0;
-                    chosen_distance = 0;
-                    run = 0;
-
-                    // Reset buffer
-                    nav.reset_buffer(front_lidar_buffer, size);
-
-                    // Reset flag
-                    found = false;
-                }
             }
 
+        }
+
+        if (run == num_rotations - 1) {
+            // If we reach the end, modify the checking angle and try again
+            skid_check_angle = std::max(skid_check_angle - 30, 15); 
+            num_rotations = 360 / skid_check_angle;
+            run = 0; 
         }
 
     }
@@ -198,3 +231,4 @@ int main() {
     return 0;
 
 }
+

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstddef>
+#include <math.h>
 
 #include <pico/stdlib.h>
 #include <pico/time.h>
@@ -235,4 +236,22 @@ void Drive::brake() {
     pwm_set_gpio_level(MOTOR4_PWM_PIN, 0);
     pwm_set_gpio_level(MOTOR5_PWM_PIN, 0);
     pwm_set_gpio_level(MOTOR6_PWM_PIN, 0);
+}
+
+// Calculate the time in seconds needed to skid-steer by angle_deg degrees.
+// Uses the known wheel RPM, diameter, skid duty cycle, and rover track width.
+// The rover rotates about its centre — each wheel travels an arc of radius
+// (TRACK_WIDTH / 2). Time = arc_length / wheel_linear_speed.
+float Drive::calc_skid_time(float angle_deg) {
+    float angle_rad  = fabsf(angle_deg) * (PI / 180.0f);
+    float arc_length = angle_rad * (TRACK_WIDTH / 2.0f);
+
+    // Linear speed of wheels at skid duty cycle
+    float wheel_speed = PI * WHEEL_DIAMETER * (OLD_MOTOR_RPM / 60.0f) * PWM_SKID_DIVIDER;
+
+    if (wheel_speed <= 0.0f) {
+        return 0.0f;
+    }
+    
+    return (arc_length / wheel_speed);
 }

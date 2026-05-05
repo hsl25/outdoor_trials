@@ -18,8 +18,8 @@
 #define NORMAL_DUTY_CYCLE 0.5
 #define OUTER_DUTY_CYCLE 0.5 // Refers to the PWM duty cycle of the outer wheels when steering
 #define TURN_RADIUS 0.25 // 0.50 metre turning radius
-#define TRACK_WIDTH 0.20 // 0.2m distance between the left and right wheels on the same axle
-#define PWM_SKID_DIVIDER 0.5
+#define TRACK_WIDTH 0.60 // 0.2m distance between the left and right wheels on the same axle
+#define PWM_SKID_DIVIDER 0.47
 
 //  ==================== PWM Pins used (1 speed pin per motor) ====================
 #define MOTOR1_PWM_PIN 3    // GP3 - motor 1
@@ -46,6 +46,7 @@
 #define PI 3.141592
 #define OLD_MOTOR_RPM 56 // This is the RPM of the old motors at 50% duty cycle 
 #define WHEEL_DIAMETER 0.107 // 107mm diameter wheels on the old motors
+#define SKID_TIME_CORRECTION 0.85f  
 
 class Drive {
     private:
@@ -69,6 +70,7 @@ class Drive {
         void skid_left();
         void skid_right();
         void brake();
+        float calc_skid_time(float angle_deg);
     };
 
 #endif 

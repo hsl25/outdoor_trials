@@ -14,7 +14,7 @@
 
 // Servo defines
 #define SWEEP_DELAY 5 // 10ms delay between angle incremements when sweeping the servo back and forth
-#define CALIBRATION_SWEEPS 4 // Before the rover starts moving, the servo will scan back and forth 10 times for distance cailbration
+#define CALIBRATION_SWEEPS 1 // Before the rover starts moving, the servo will scan back and forth 10 times for distance cailbration
 #define ZERO_PULSE 1.0 // PWM pulse time for 0 degrees
 #define NINETY_PULSE 1.5 // PWM pulse time for 90 degrees
 #define ONE_EIGHTY_PULSE 2.0 // PWM pulse time for 180 degrees
@@ -22,8 +22,8 @@
 #define MAX_SERVO_ANGLE 180 // This is the maximum angle scope of the servo
 #define SERVO_MIN_PULSE_MS 0.5f
 #define SERVO_MAX_PULSE_MS 2.5f
-#define SERVO_MIN_SWEEP_ANGLE 50
-#define SERVO_MAX_SWEEP_ANGLE 130
+#define SERVO_MIN_SWEEP_ANGLE 12
+#define SERVO_MAX_SWEEP_ANGLE 170
 
 class Servo {
     public:
